@@ -1,0 +1,2265 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>myTapp Kart 2027</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src 'none'; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="myTapp Kart 2027: kart em 3D low-poly, 4 pistas e a Copa myTapp.">
+<!--
+  myTapp Kart 2027. Kart em 3D low-poly, original: 4 pistas, itens, especiais e a Copa myTapp.
+  Roda inteiro nesta pasta (este arquivo e o three.js ao lado): sem login, sem servidor e sem rede; o recorde fica só
+  neste aparelho.
+-->
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#fff;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    user-select:none;-webkit-user-select:none;touch-action:none}
+  #cena{display:block;width:100%;height:100%}
+  .hud{position:fixed;pointer-events:none;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.6);font-variant-numeric:tabular-nums}
+  #hud-volta{top:14px;left:16px;font-size:22px;font-weight:800;letter-spacing:.5px}
+  #hud-tempo{top:44px;left:16px;font-size:18px}
+  #hud-melhor{top:68px;left:16px;font-size:14px;opacity:.85}
+  #hud-pos{top:8px;right:18px;font-size:58px;font-weight:900;line-height:1}
+  #hud-pos small{font-size:22px;opacity:.8}
+  #hud-vel{bottom:16px;right:20px;font-size:30px;font-weight:800}
+  #hud-vel small{font-size:14px;opacity:.8}
+  #hud-turbo{bottom:56px;right:20px;font-size:15px;font-weight:800;letter-spacing:1px}
+  #mini{position:fixed;left:12px;bottom:12px;width:150px;height:150px;pointer-events:none}
+  #aviso{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;
+    font-size:clamp(70px,16vw,150px);font-weight:900;color:#ffb000;text-shadow:0 6px 0 #6b3300,0 0 30px rgba(0,0,0,.5)}
+  .tela{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;padding:16px;text-align:center;background:rgba(0,0,0,.66)}
+  .tela h1{margin:0;font-size:clamp(36px,8vw,76px);font-weight:900;color:#ffb000;text-shadow:0 5px 0 #7a3b00;line-height:1}
+  .tela h2{margin:0;font-size:clamp(28px,6vw,52px);font-weight:900;color:#ffb000;text-shadow:0 4px 0 #7a3b00}
+  .tela .sub{margin:0;opacity:.8;font-size:15px}
+  .tela .controles{max-width:520px;font-size:15px;line-height:1.55;opacity:.92}
+  .tela button{font:inherit;font-size:20px;font-weight:800;color:#2a1400;background:#ffb000;border:0;border-radius:12px;
+    padding:12px 30px;cursor:pointer;box-shadow:0 4px 0 #7a3b00}
+  .tela button.sec{background:#e8e8e8;box-shadow:0 4px 0 #777;font-size:16px;padding:9px 22px}
+  .tela button:active{transform:translateY(3px);box-shadow:0 1px 0 #7a3b00}
+  .rec{margin:0;font-size:14px;opacity:.85;font-variant-numeric:tabular-nums}
+  table.class{border-collapse:collapse;font-size:16px;font-variant-numeric:tabular-nums;min-width:min(360px,92vw)}
+  table.class td{padding:5px 12px;border-bottom:1px solid rgba(255,255,255,.15);text-align:left}
+  table.class td:last-child{text-align:right}
+  table.class tr.eu td{color:#ffb000;font-weight:800}
+  .tela.vitrine{justify-content:flex-end;background:linear-gradient(to top,rgba(0,0,0,.88) 0,rgba(0,0,0,.6) 42%,rgba(0,0,0,0) 68%)}
+  #cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;width:min(920px,100%);max-height:min(36vh,252px);overflow-y:auto;padding:2px;scrollbar-width:thin}
+  .tela button.card{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;font-size:16px;min-width:0;
+    color:#fff;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:none;text-align:left}
+  .tela button.card small{font-size:11.5px;font-weight:500;opacity:.8;line-height:1.2}
+  .tela button.card.sel{border-color:#ffb000;background:rgba(255,176,0,.22)}
+  .tela button.card:active{transform:none;box-shadow:none}
+  @media (max-width:640px){#cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .tela button.card{padding:6px 8px;font-size:14px} .dica{display:none}}
+  .oculto{display:none!important}
+  #toque{position:fixed;inset:auto 0 0 0;height:0;pointer-events:none}
+  #toque button{position:fixed;pointer-events:auto;width:74px;height:74px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
+    background:rgba(0,0,0,.35);color:#fff;font:800 15px system-ui,sans-serif;touch-action:none}
+  #toque button.on{background:rgba(255,176,0,.55)}
+  #t-esq{left:16px;bottom:24px} #t-dir{left:104px;bottom:24px}
+  #t-acel{right:16px;bottom:96px} #t-freio{right:104px;bottom:24px} #t-drift{right:16px;bottom:16px;width:74px;height:64px!important;border-radius:16px!important}
+  body.toque #mini{bottom:112px}
+  body.toque #hud-vel{bottom:auto;top:76px} body.toque #hud-turbo{bottom:auto;top:116px}
+  /* fase 3: item guardado, barra do especial, recados e pistas */
+  #hud-item{top:10px;left:50%;transform:translateX(-50%);width:120px;text-align:center}
+  #hud-item .cx{position:relative;width:74px;height:74px;margin:0 auto;border-radius:16px;border:3px solid rgba(255,255,255,.8);
+    background:rgba(20,12,0,.55);display:flex;align-items:center;justify-content:center;font-size:44px;line-height:1;box-shadow:0 3px 0 rgba(0,0,0,.4)}
+  #hud-item .cx.gira{border-color:#ffb000}
+  #hud-item .esc{position:absolute;right:-30px;top:4px;font-size:22px}
+  #hud-item .nm{font-size:12px;font-weight:800;letter-spacing:.4px;margin-top:4px;white-space:nowrap}
+  #hud-esp{top:112px;left:50%;transform:translateX(-50%);width:210px;text-align:center;font-size:12px;font-weight:800;white-space:nowrap}
+  #hud-esp .barra{height:10px;border-radius:6px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.7);overflow:hidden;margin-top:3px}
+  #hud-esp .barra i{display:block;height:100%;width:0;background:linear-gradient(90deg,#d98200,#ffd24a)}
+  #hud-esp.pronto{color:#ffd24a} #hud-esp.pronto .barra i{animation:pisca .45s infinite alternate}
+  @keyframes pisca{to{filter:brightness(1.7)}}
+  #hud-msg{left:0;right:0;bottom:24%;text-align:center;font-size:21px;font-weight:800}
+  #brilho{position:fixed;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at 50% 55%,rgba(255,120,200,0) 0,rgba(255,120,200,.55) 55%,rgba(255,60,170,.9) 100%)}
+  #pistas{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;width:min(920px,100%)}
+  .tela button.pista{font-size:14px;padding:6px 12px;color:#fff;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.18);
+    border-radius:999px;box-shadow:none}
+  .tela button.pista.sel{border-color:#ffb000;background:rgba(255,176,0,.25)}
+  .tela button.pista:active{transform:none;box-shadow:none}
+  #t-item{right:104px;bottom:112px} #t-esp{right:192px;bottom:62px}
+</style>
+<script type="importmap">{"imports":{"three":"./three-0.160.0.module.min.js","three/addons/utils/BufferGeometryUtils.js":"./three-0.160.0.BufferGeometryUtils.js"}}</script>
+</head>
+<body>
+<canvas id="cena"></canvas>
+<div class="hud" id="hud-volta"></div>
+<div class="hud" id="hud-tempo"></div>
+<div class="hud" id="hud-melhor"></div>
+<div class="hud" id="hud-pos"></div>
+<div class="hud" id="hud-turbo"></div>
+<div class="hud" id="hud-vel"></div>
+<div class="hud" id="hud-item"><div class="cx"><span class="ic"></span><span class="esc"></span></div><div class="nm"></div></div>
+<div class="hud" id="hud-esp"><span class="tx"></span><div class="barra"><i></i></div></div>
+<div class="hud" id="hud-msg"></div>
+<div id="brilho"></div>
+<canvas id="mini"></canvas>
+<div id="aviso"></div>
+
+<div id="toque" class="oculto">
+  <button id="t-esq" data-k="esq">◀</button><button id="t-dir" data-k="dir">▶</button>
+  <button id="t-acel" data-k="acel">ACEL</button><button id="t-freio" data-k="freio">FREIO</button>
+  <button id="t-drift" data-k="drift">DRIFT</button>
+  <button id="t-item" data-a="item">ITEM</button><button id="t-esp" data-a="esp">ESP</button>
+</div>
+
+<div id="menu" class="tela">
+  <h1>myTapp Kart 2027</h1>
+  <p class="sub">4 pistas, 6 itens myTapp, um especial por piloto e a Copa myTapp</p>
+  <div class="controles">
+    <b>↑</b> acelera · <b>↓</b> freia e dá ré · <b>← →</b> vira<br>
+    <b>Espaço</b>: drift. Segure numa curva até sair faísca azul (ou laranja, mais forte) e solte para ganhar turbo.<br>
+    Passe pelos engradados da myTapp para ganhar um item e use com <b>X</b>.
+    Pegue copinhos de chope para encher a barra e solte o especial do seu veículo com <b>C</b>.<br>
+    <b>Esc</b>: pausa · 3 voltas contra a galera da myTapp, em 4 pistas
+  </div>
+  <button id="b-correr">Escolher piloto ▶</button>
+  <p class="rec" id="menu-rec"></p>
+</div>
+<div id="escolha" class="tela vitrine oculto">
+  <h2>Escolha seu piloto</h2>
+  <div id="pistas"></div>
+  <div id="cards"></div>
+  <p class="sub" id="esc-info"></p>
+  <button id="b-largar">Correr ▶</button>
+  <p class="sub dica">← → troca o piloto · ↑ ↓ troca a pista · Enter corre · Esc volta</p>
+</div>
+<div id="pausa" class="tela oculto">
+  <h2>Pausa</h2>
+  <button id="b-continuar">Continuar</button>
+  <button id="b-reiniciar" class="sec">Recomeçar a corrida</button>
+</div>
+<div id="fim" class="tela oculto">
+  <h2 id="fim-pos"></h2>
+  <p class="sub" id="fim-copa"></p>
+  <table class="class" id="fim-tab"></table>
+  <p class="rec" id="fim-rec"></p>
+  <button id="b-denovo">Correr de novo</button>
+  <button id="b-trocar" class="sec">Trocar piloto</button>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+const LARG = 16;
+const MURO = LARG / 2 + 10;
+const VOLTAS = 3;
+const N = 1200;
+const ESC = 1.8;
+const VMAX = 31, VGRAMA = 12, VTURBO = 41, ACEL = 15, FREIO = 32, ATRITO = 5, VRE = 8;
+const PILOTOS = [
+  {"nome":"Mateus","especial":"rodada","ok":true,"cor":16756736,"fator":0.95,"veic":{"tipo":"duo","desc":"myTapp DUO","cor":2762279,"eletrico":true},"tracos":{"cabelo":"curto","corCabelo":3811871}},
+  {"nome":"Ju","especial":"vacuo","ok":true,"cor":16736162,"fator":0.93,"veic":{"tipo":"p208","desc":"Peugeot 208 prata","cor":12830668},"tracos":{"cabelo":"longo","corCabelo":4862242}},
+  {"nome":"Leo","especial":"casco","ok":true,"cor":3066993,"fator":0.94,"veic":{"tipo":"march","desc":"Besourinho branco","cor":15987696},"tracos":{"cabelo":"curto","corCabelo":3811872,"barba":3023386,"pele":15120278}},
+  {"nome":"Pedro","especial":"estouro","ok":true,"cor":16731453,"fator":0.92,"veic":{"tipo":"corsa","desc":"Corsa Wind 1999 prata","cor":11843773},"tracos":{"cabelo":"cacheado","corCabelo":3088664,"barba":3088664,"pele":15251865}},
+  {"nome":"João","especial":"descarga","ok":true,"cor":3842303,"fator":0.95,"veic":{"tipo":"patinete","desc":"Patinete elétrico","cor":2764083,"eletrico":true},"tracos":{"cabelo":"curto","corCabelo":2234901}},
+  {"nome":"Robô","especial":"generico","cor":11894015,"fator":0.93,"veic":{"tipo":"fit","desc":"Piloto robô","cor":9080726},"tracos":{}},
+  {"nome":"Priscila","especial":"trilha","ok":true,"cor":2085296,"fator":0.94,"veic":{"tipo":"renegade","desc":"Jeep Renegade chumbo","cor":5264731},"tracos":{"cabelo":"longo","corCabelo":2038037}},
+  {"nome":"Luiz","especial":"rack","ok":true,"cor":3794687,"fator":0.92,"veic":{"tipo":"versa","desc":"Nissan Versa chumbo com rack","cor":5593439,"rack":true},"tracos":{"cabelo":"curto","corCabelo":3023129,"barba":3812128,"pele":14461572}},
+  {"nome":"Nilana","especial":"bolso","ok":true,"cor":16742938,"fator":0.94,"veic":{"tipo":"kwid","desc":"Renault Kwid branco","cor":15921902},"tracos":{"cabelo":"longo","cachos":true,"corCabelo":12411952,"pele":15910566,"camiseta":15986662}},
+  {"nome":"Tiago","especial":"buzina","ok":true,"cor":16773226,"fator":0.93,"veic":{"tipo":"hb20","desc":"Hyundai HB20 prata","cor":12567496},"tracos":{"cabelo":"cacheado","corCabelo":2037779,"barba":2037779,"cavanhaque":true,"pele":14264454}},
+  {"nome":"Menor","especial":"esporos","ok":true,"cor":8361471,"fator":0.93,"veic":{"tipo":"cogumelo","desc":"Cogumelo","cor":3164376,"chama":13037823},"tracos":{"pele":3164376,"cabelo":"gorro","corCabelo":16250351,"camiseta":16250351,"calca":16250351,"tenis":16250351,"bermuda":true}},
+  {"nome":"ETejo","especial":"orbital","ok":true,"cor":6747426,"fator":0.94,"veic":{"tipo":"nave","desc":"Nave espacial","cor":14673388,"eletrico":true},"tracos":{"alien":true,"pele":9680258,"corCabelo":6747426,"camiseta":1842721,"calca":2764083,"tenis":3817544}},
+  {"nome":"Fábio","especial":"parrilla","ok":true,"cor":6275370,"fator":0.93,"veic":{"tipo":"sidecar","desc":"Versys 1200 preta e verde, sidecar vazio","cor":1513499,"detalhe":6275370,"bandeira":null,"sozinho":"Versys 1200 preta e verde, sidecar vazio","motorista":{"nome":"Fábio","ok":true,"cor":6275370,"tracos":{"cabelo":"curto","corCabelo":9407881,"barba":15658215,"barbona":true,"oculos":1184274,"armacao":"quadrada","pele":14857106,"camiseta":1844019,"calca":2303531}},"vazio":true},"tracos":{"cabelo":"curto","corCabelo":9407881,"barba":15658215,"barbona":true,"oculos":1184274,"armacao":"quadrada","pele":14857106,"camiseta":1844019,"calca":2303531}},
+  {"nome":"Bernardo","especial":"escada","ok":true,"cor":15921906,"fator":0.94,"veic":{"tipo":"uno","desc":"Uno quadrado preto com escada","cor":1513499,"escada":true},"tracos":{"cabelo":"cacheado","corCabelo":4929063,"pele":15319974,"camiseta":1579034}},
+  {"nome":"Henrique","especial":"empurra","ok":true,"cor":13041408,"fator":0.95,"veic":{"tipo":"carrinho","desc":"Carrinho de supermercado","cor":13225168},"tracos":{"cabelo":"cacheado","corCabelo":8077089,"pele":15582635,"camiseta":2040883}},
+  {"nome":"Natália","especial":"glitter","ok":true,"cor":16754904,"fator":0.94,"veic":{"tipo":"march","desc":"Carro rosa","cor":16033481},"tracos":{"cabelo":"longo","corCabelo":3877408,"oculos":4860442,"pele":14462607,"camiseta":1710620}},
+  {"nome":"Alba","especial":"ignicao","ok":true,"cor":9329919,"fator":0.94,"veic":{"tipo":"foguete","desc":"Carro-foguete roxo","cor":6963104},"tracos":{"cabelo":"longo","corCabelo":5124898,"barba":5913896,"cavanhaque":true,"pele":14858134,"camiseta":1447447}},
+];
+if (location.search.includes('muitos')) for (let n = 0; n < 18; n++) PILOTOS.push({...PILOTOS[1 + n % 11], ok: false});
+let robos = 0;
+for (const p of PILOTOS) if (!p.ok) {
+  const mot = p.veic.motorista;
+  if (mot?.ok) Object.assign(p, {ok: true, nome: mot.nome, cor: mot.cor, tracos: mot.tracos, veic: {...p.veic, desc: p.veic.sozinho, bandeira: null, vazio: true}});
+  else Object.assign(p, {nome: 'Robô ' + ++robos, especial: 'generico', tracos: {}, veic: {...p.veic, desc: 'Piloto robô', cor: 0x8a8f96, motorista: null, bandeira: null}});
+}
+if (location.search.includes('tracos')) PILOTOS.forEach((p, i) => Object.assign(p.tracos, {
+  cabelo: ['curto', 'longo', 'rabo', 'cacheado', 'careca', 'gorro'][i % 6], barba: i % 3 === 0 ? 0x3a2a1f : null, oculos: i % 2 ? 0x111111 : null}));
+const CHAVE_REC = 'mytapp-kart-2027-recorde';
+let semente = 2027;
+const rnd = () => { semente |= 0; semente = semente + 0x6D2B79F5 | 0; let t = Math.imul(semente ^ semente >>> 15, 1 | semente);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const difAng = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
+const canvas = document.getElementById('cena');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const cena = new THREE.Scene();
+cena.background = new THREE.Color(0x8fd3ff);
+cena.fog = new THREE.Fog(0x8fd3ff, 170, 560);
+const cam = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.3, 1500);
+const luzCeu = new THREE.HemisphereLight(0xd6eeff, 0x4f6f2c, 1.15);
+cena.add(luzCeu);
+const sol = new THREE.DirectionalLight(0xfff0d0, 2.4);
+sol.castShadow = true;
+sol.shadow.mapSize.set(2048, 2048);
+Object.assign(sol.shadow.camera, {left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 260});
+sol.shadow.bias = -0.0006;
+cena.add(sol, sol.target);
+function tex(w, h, desenha) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  desenha(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+function ruido(g, w, h, base, forca, n) {
+  g.fillStyle = base; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < n; i++) {
+    const v = (rnd() * 2 - 1) * forca, c = v > 0 ? 255 : 0;
+    g.fillStyle = `rgba(${c},${c},${c},${Math.abs(v)})`;
+    g.fillRect(rnd() * w | 0, rnd() * h | 0, 2, 2);
+  }
+}
+function texTexto(txt, fundo, cor, w = 1024, h = 128, fonte = 84) {
+  return tex(w, h, (g) => {
+    g.fillStyle = fundo; g.fillRect(0, 0, w, h);
+    g.fillStyle = cor; g.font = `900 ${fonte}px system-ui, sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, w / 2, h / 2 + 4);
+  });
+}
+const PISTAS = [
+  {id: 'fabrica', nome: 'Fábrica myTapp', desc: 'galpões, contêineres e a esteira de barris',
+    ctrl: [[0, 0], [70, 0], [108, 6], [126, 36], [110, 62], [82, 66], [66, 88], [80, 110], [88, 130], [66, 148], [0, 142],
+      [-44, 134], [-66, 112], [-60, 84], [-74, 56], [-78, 22], [-48, 0]],
+    ceu: 0xb8d3e8, nevoa: [160, 560], hemi: [0xe6eef5, 0x5f6166, 1.15], sol: [0xfff3dd, 2.3],
+    chao: (g, w, h) => { ruido(g, w, h, '#8b8d91', 0.09, 7000); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 0, w, 2); g.fillRect(0, 0, 2, h); },
+    chaoRep: 260, asf: '#45464d', linha: '#f2f2f2', zebra: ['#ffc400', '#1f1f22'], muro: ['#ffc400', '#26262a'], muroLuz: 0.35,
+    portico: '#ff7a00', placas: ['myTapp', 'Produção', 'Chope', 'Chopp sem fila', 'myTapp', 'Sirva-se'], decor: decorFabrica},
+  {id: 'lupulo', nome: 'Vale do Lúpulo', desc: 'plantação de lúpulo, cervejaria e morros',
+    ctrl: [[0, 0], [60, -5], [110, 10], [140, 50], [130, 100], [90, 120], [60, 100], [40, 70], [10, 80],
+      [-20, 120], [-70, 120], [-110, 90], [-120, 40], [-100, 0], [-60, -10]],
+    ceu: 0x9fd6ff, nevoa: [190, 620], hemi: [0xffeacc, 0x4f6f2c, 1.1], sol: [0xffd59a, 2.5],
+    chao: (g, w, h) => ruido(g, w, h, '#4f8f34', 0.1, 9000),
+    chaoRep: 170, asf: '#45464d', linha: '#f2f2f2', zebra: ['#d62828', '#f5f5f5'], muro: ['#ff7a00', '#f5f5f5'], muroLuz: 0.45,
+    portico: '#2f8f2f', placas: ['myTapp', 'Lúpulo fresco', 'Chope', 'myTapp', 'Sirva-se', 'Chopp sem fila'], decor: decorLupulo},
+  {id: 'praia', nome: 'Praia de Verão', desc: 'areia, mar, coqueiros e quiosques',
+    ctrl: [[-140, 0], [-60, -4], [20, -4], [100, 0], [142, 22], [150, 58], [124, 82], [92, 74], [62, 96], [30, 80],
+      [0, 102], [-30, 86], [-62, 106], [-102, 100], [-136, 70], [-156, 34]],
+    ceu: 0x7fd3ff, nevoa: [200, 650], hemi: [0xe8f6ff, 0xc9b27a, 1.2], sol: [0xfff6e0, 2.6],
+    chao: (g, w, h) => ruido(g, w, h, '#e3cf98', 0.08, 9000),
+    chaoRep: 200, asf: '#4a4b51', linha: '#f2f2f2', zebra: ['#1e88e5', '#f5f5f5'], muro: ['#1e88e5', '#f5f5f5'], muroLuz: 0.4,
+    portico: '#1e88e5', placas: ['myTapp', 'Chopp gelado', 'Chope', 'myTapp', 'Sirva-se', 'Verão myTapp'], decor: decorPraia},
+  {id: 'noite', nome: 'Bar à Noite', desc: 'cidade com neon e a torre de chope gigante',
+    ctrl: [[0, 0], [60, 0], [82, 12], [86, 42], [80, 70], [96, 92], [124, 96], [138, 118], [122, 142], [60, 142], [28, 132],
+      [18, 102], [-10, 92], [-30, 112], [-62, 116], [-84, 96], [-84, 30], [-62, 4]],
+    ceu: 0x0a1030, nevoa: [70, 430], hemi: [0x8a96d8, 0x22222c, 0.9], sol: [0xaebcff, 0.9], noite: true,
+    chao: (g, w, h) => { ruido(g, w, h, '#2a2c33', 0.08, 6000); g.fillStyle = 'rgba(255,255,255,.07)'; g.fillRect(0, h / 2 - 1, w, 2); },
+    chaoRep: 220, asf: '#33343b', linha: '#e9f3ff', zebra: ['#20e0ff', '#1b1030'], muro: ['#b44cff', '#1b1030'], muroLuz: 1.1,
+    portico: '#b44cff', placas: ['myTapp', 'CHOPE', 'Chope', 'Sirva-se', 'myTapp', 'Aberto'], decor: decorNoite},
+];
+const CHAVE_PISTA = 'mytapp-kart-2027-pista';
+let pistaAtual = (() => { try { return Math.max(0, PISTAS.findIndex((p) => p.id === localStorage.getItem(CHAVE_PISTA))); } catch { return 0; } })();
+let COMP = 0, minX = 0, maxX = 0, minZ = 0, maxZ = 0, animaPista = null;
+const P = [], T = [], NR = [], DIST = [];
+const gPista = new THREE.Group(); cena.add(gPista);
+function calculaPista(def) {
+  const curva = new THREE.CatmullRomCurve3(def.ctrl.map(([x, z]) => new THREE.Vector3(x * ESC, 0, z * ESC)), true, 'centripetal');
+  COMP = curva.getLength(); P.length = T.length = NR.length = DIST.length = 0;
+  for (let i = 0; i < N; i++) {
+    const u = i / N, t = curva.getTangentAt(u);
+    t.y = 0; t.normalize();
+    P.push(curva.getPointAt(u)); T.push(t); NR.push(new THREE.Vector3(t.z, 0, -t.x)); DIST.push(u * COMP);
+  }
+  minX = minZ = 1e9; maxX = maxZ = -1e9;
+  for (const p of P) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); }
+}
+function fita(o1, o2, y, passoTex, vertical = false) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= N; i++) {
+    const j = i % N, p = P[j], l = NR[j], d = (i === N ? COMP : DIST[j]) / passoTex;
+    if (vertical) pos.push(p.x + l.x * o1, 0, p.z + l.z * o1, p.x + l.x * o1, o2, p.z + l.z * o1);
+    else pos.push(p.x + l.x * o1, y, p.z + l.z * o1, p.x + l.x * o2, y, p.z + l.z * o2);
+    uv.push(0, d, 1, d);
+    if (i < N) { const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+const pm = (o) => new THREE.MeshStandardMaterial({roughness: 0.85, flatShading: true, ...o});
+function distPista(x, z, passo = 4) {
+  let d2 = 1e12;
+  for (let i = 0; i < N; i += passo) { const dx = x - P[i].x, dz = z - P[i].z; d2 = Math.min(d2, dx * dx + dz * dz); }
+  return Math.sqrt(d2);
+}
+function maisPerto(x, z) { let m = 0, d2 = 1e12; for (let i = 0; i < N; i += 4) { const d = (x - P[i].x) ** 2 + (z - P[i].z) ** 2; if (d < d2) { d2 = d; m = i; } } return m; }
+const viraPista = (x, z) => { const j = maisPerto(x, z); return Math.atan2(P[j].x - x, P[j].z - z); };
+function dentro(x, z) {
+  let d = false;
+  for (let i = 0, j = N - 6; i < N; j = i, i += 6) {
+    const a = P[i], b = P[j];
+    if ((a.z > z) !== (b.z > z) && x < (b.x - a.x) * (z - a.z) / (b.z - a.z) + a.x) d = !d;
+  }
+  return d;
+}
+function lugaresFora(qtd, folga, alcance, afast = 0, aceita = null) {
+  const r = [];
+  for (let t = 0; r.length < qtd && t < qtd * 40; t++) {
+    const x = minX - alcance + rnd() * (maxX - minX + 2 * alcance), z = minZ - alcance + rnd() * (maxZ - minZ + 2 * alcance);
+    if (distPista(x, z) < MURO + folga || (aceita && !aceita(x, z))) continue;
+    if (afast && r.some(([a, b]) => (a - x) ** 2 + (b - z) ** 2 < afast * afast)) continue;
+    r.push([x, z]);
+  }
+  return r;
+}
+const _mx = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _v = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color();
+function inst(geo, mat, lista, sombra = true) {
+  const m = new THREE.InstancedMesh(geo, mat, Math.max(1, lista.length)); m.count = lista.length;
+  lista.forEach(([x, y, z, ry = 0, sx = 1, sy = sx, sz = sx, cor], i) => {
+    m.setMatrixAt(i, _mx.compose(_v.set(x, y, z), _q.setFromEuler(_e.set(0, ry, 0)), _s.set(sx, sy, sz)));
+    if (cor !== undefined) m.setColorAt(i, _c.setHex(cor));
+  });
+  m.castShadow = sombra; m.receiveShadow = true; gPista.add(m); return m;
+}
+function instModelo(g, lista, sombra = true) {
+  g.updateMatrixWorld(true); const por = new Map();
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    const geo = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(o.matrixWorld);
+    for (const k of Object.keys(geo.attributes)) if (k !== 'position' && k !== 'normal') geo.deleteAttribute(k);
+    if (!por.has(o.material)) por.set(o.material, []);
+    por.get(o.material).push(geo); o.geometry.dispose();
+  });
+  for (const [mat, geos] of por) inst(mergeGeometries(geos), mat, lista, sombra && !mat.transparent);
+}
+function prisma(w, h, d) {
+  const a = w / 2, b = d / 2, v = [[-a, 0, -b], [-a, 0, b], [-a, h, 0], [a, 0, -b], [a, 0, b], [a, h, 0]];
+  const f = [[0, 1, 2], [3, 5, 4], [0, 2, 5], [0, 5, 3], [1, 4, 5], [1, 5, 2], [0, 3, 4], [0, 4, 1]];
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(f.flat().flatMap((i) => v[i]), 3));
+  g.computeVertexNormals(); return g;
+}
+function placaNoPoste(x, z, ry, txt, fundo, cor, w = 9, h = 2.6, y = 3.6, basico = false) {
+  const placa = new THREE.Group(); placa.position.set(x, 0, z); placa.rotation.y = ry;
+  const t = texTexto(txt, fundo, cor, 1024, 296, 150);
+  const mat = basico ? new THREE.MeshBasicMaterial({map: t, side: THREE.DoubleSide})
+    : new THREE.MeshStandardMaterial({map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 0.55, side: THREE.DoubleSide});
+  const q = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); q.position.y = y; q.castShadow = !basico; placa.add(q);
+  const mp = pm({color: 0x333333});
+  for (const px of [-w * 0.4, w * 0.4]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.25, y - h / 2, 0.25), mp); p.position.set(px, (y - h / 2) / 2, -0.05); placa.add(p); }
+  gPista.add(placa); return placa;
+}
+function arvores(qtd, cor = 0x2f7d32, alcance = 140) {
+  const arv = lugaresFora(qtd, 5, alcance).map(([x, z]) => [x, z, 0.7 + rnd() * 0.8]);
+  inst(new THREE.CylinderGeometry(0.35, 0.45, 2.2, 6), pm({color: 0x6b4423}), arv.map(([x, z, e]) => [x, 1.1 * e, z, 0, e]));
+  inst(new THREE.ConeGeometry(2.4, 6, 7), pm({color: cor}), arv.map(([x, z, e]) => [x, 5.2 * e, z, rnd() * 6, e]));
+}
+function reta(compr = 80) {
+  let melhor = 0, mv = 1e9;
+  for (let i = 0; i < N; i += 10) { let s = 0; for (let k = 0; k < compr; k += 10) s += 1 - T[(i + k) % N].dot(T[(i + k + 10) % N]); if (s < mv) { mv = s; melhor = i; } }
+  return melhor;
+}
+function limpaPista() {
+  gPista.traverse((o) => {
+    o.geometry?.dispose();
+    for (const m of [o.material].flat()) if (m) { m.map?.dispose(); m.emissiveMap?.dispose(); m.dispose(); }
+  });
+  gPista.clear(); animaPista = null;
+}
+function montaPista(def) {
+  semente = 2027 + pistaAtual * 7919;
+  calculaPista(def);
+  cena.background = new THREE.Color(def.ceu); cena.fog = new THREE.Fog(def.ceu, ...def.nevoa);
+  luzCeu.color.setHex(def.hemi[0]); luzCeu.groundColor.setHex(def.hemi[1]); luzCeu.intensity = def.hemi[2];
+  sol.color.setHex(def.sol[0]); sol.intensity = def.sol[1];
+  const tChao = tex(256, 256, def.chao);
+  tChao.wrapS = tChao.wrapT = THREE.RepeatWrapping; tChao.repeat.set(def.chaoRep, def.chaoRep);
+  const chao = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({map: tChao, roughness: 1}));
+  chao.rotation.x = -Math.PI / 2; chao.receiveShadow = true; gPista.add(chao);
+  const tAsf = tex(128, 256, (g, w, h) => {
+    ruido(g, w, h, def.asf, 0.12, 4000);
+    g.fillStyle = def.linha; g.fillRect(4, 0, 5, h); g.fillRect(w - 9, 0, 5, h);
+    g.globalAlpha = 0.7; g.fillRect(w / 2 - 2, 0, 4, h * 0.45); g.globalAlpha = 1;
+  });
+  tAsf.wrapT = THREE.RepeatWrapping;
+  const asf = new THREE.Mesh(fita(LARG / 2, -LARG / 2, 0.02, LARG), new THREE.MeshStandardMaterial({map: tAsf, roughness: 0.95}));
+  asf.receiveShadow = true; gPista.add(asf);
+  const listra = ([a, b]) => { const t = tex(8, 16, (g) => { g.fillStyle = a; g.fillRect(0, 0, 8, 8); g.fillStyle = b; g.fillRect(0, 8, 8, 8); });
+    t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter; return t; };
+  const mZebra = new THREE.MeshStandardMaterial({map: listra(def.zebra), roughness: 0.8});
+  for (const [a, b] of [[LARG / 2 + 1.4, LARG / 2], [-LARG / 2, -LARG / 2 - 1.4]]) {
+    const z = new THREE.Mesh(fita(a, b, 0.035, 3), mZebra); z.receiveShadow = true; gPista.add(z);
+  }
+  const tMuro = listra(def.muro);
+  const mMuro = new THREE.MeshStandardMaterial({map: tMuro, emissive: 0xffffff, emissiveMap: tMuro, emissiveIntensity: def.muroLuz, roughness: 0.7, side: THREE.DoubleSide});
+  for (const o of [MURO, -MURO]) { const m = new THREE.Mesh(fita(o, 1.1, 0, 4, true), mMuro); m.receiveShadow = true; gPista.add(m); }
+  const g = new THREE.Group(), L = NR[0];
+  g.position.copy(P[0]); g.rotation.y = Math.atan2(-L.z, L.x);
+  const mPilar = new THREE.MeshStandardMaterial({color: 0x2b2b33, roughness: 0.6});
+  for (const s of [1, -1]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 8, 1.2), mPilar);
+    m.position.set(s * (LARG / 2 + 2.2), 4, 0); m.castShadow = true; g.add(m);
+  }
+  const tTxt = texTexto('myTapp Kart 2027', def.portico, '#ffffff');
+  const mTxt = new THREE.MeshStandardMaterial({map: tTxt, emissive: 0xffffff, emissiveMap: tTxt, emissiveIntensity: def.noite ? 0.9 : 0.55, roughness: 0.6});
+  const viga = new THREE.Mesh(new THREE.BoxGeometry(LARG + 5.6, 2, 1), [mPilar, mPilar, mPilar, mPilar, mTxt, mTxt]);
+  viga.position.y = 8.6; viga.castShadow = true; g.add(viga);
+  const tQ = tex(160, 20, (c) => { for (let x = 0; x < 16; x++) for (let y = 0; y < 2; y++) { c.fillStyle = (x + y) % 2 ? '#111' : '#fff'; c.fillRect(x * 10, y * 10, 10, 10); } });
+  tQ.magFilter = THREE.NearestFilter;
+  const linha = new THREE.Mesh(new THREE.PlaneGeometry(LARG, 2), new THREE.MeshStandardMaterial({map: tQ, roughness: 0.9}));
+  linha.rotation.x = -Math.PI / 2; linha.position.y = 0.045; linha.receiveShadow = true; g.add(linha);
+  gPista.add(g);
+  const barris = [];
+  for (let i = 0; i < N; i += 6) {
+    const vira = T[(i + 25) % N].dot(NR[i]);
+    if (Math.abs(vira) < 0.25) continue;
+    const off = (vira > 0 ? -1 : 1) * (MURO + 0.9), x = P[i].x + NR[i].x * off, z = P[i].z + NR[i].z * off;
+    barris.push([x, 0.6, z], [x, 1.8, z]);
+  }
+  inst(new THREE.CylinderGeometry(0.55, 0.55, 1.2, 16), new THREE.MeshStandardMaterial({color: 0xc9cdd5, metalness: 0.85, roughness: 0.3}), barris);
+  let k = 0;
+  for (let i = 60; i < N && k < def.placas.length; i += 40) {
+    if (Math.abs(T[(i + 25) % N].dot(NR[i])) > 0.12) continue;
+    const lado = k % 2 ? 1 : -1, off = lado * (MURO + 4);
+    placaNoPoste(P[i].x + NR[i].x * off, P[i].z + NR[i].z * off, Math.atan2(-T[i].x, -T[i].z) + lado * 0.35,
+      def.placas[k], k % 2 ? (def.noite ? '#120a22' : '#1d1d24') : def.portico, '#ffffff', 9, 2.6, 3.6, def.noite);
+    k++; i += 120;
+  }
+  def.decor();
+}
+function decorFabrica() {
+  const parede = pm({color: 0xdfe0e3}), telhado = pm({color: 0xb9531c, side: THREE.DoubleSide}), porta = pm({color: 0x3a3d44}), faixa = pm({color: 0xff7a00});
+  const tMarca = texTexto('myTapp', '#ff7a00', '#ffffff', 1024, 256, 170), mMarca = new THREE.MeshStandardMaterial({map: tMarca, emissive: 0xffffff, emissiveMap: tMarca, emissiveIntensity: 0.3});
+  for (const [x, z] of lugaresFora(11, 24, 130, 48)) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = viraPista(x, z); gPista.add(g);
+    const w = 26 + rnd() * 14, h = 9 + rnd() * 5, d = 18 + rnd() * 10;
+    caixa(g, w, h, d, parede, 0, h / 2, 0).receiveShadow = true;
+    peca(g, prisma(w + 1.2, d * 0.28, d + 1.2), telhado, 0, h, 0);
+    caixa(g, w + 0.06, 0.9, d + 0.06, faixa, 0, h - 0.7, 0);
+    caixa(g, w * 0.28, h * 0.62, 0.3, porta, -w * 0.22, h * 0.31, d / 2);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.42, w * 0.105), mMarca); m.position.set(w * 0.18, h * 0.6, d / 2 + 0.06); g.add(m);
+  }
+  const cores = [0xff7a00, 0x1f6fb2, 0x2f8f4e, 0x9aa0a6, 0xc0392b, 0xffffff];
+  const cont = [];
+  for (const [x, z] of lugaresFora(24, 6, 110, 9)) {
+    const ry = viraPista(x, z) + Math.PI / 2, alt = 1 + Math.floor(rnd() * 3);
+    for (let a = 0; a < alt; a++) cont.push([x, 1.3 + a * 2.62, z, ry + (rnd() - 0.5) * 0.1, 1, 1, 1, cores[Math.floor(rnd() * cores.length)]]);
+  }
+  inst(new THREE.BoxGeometry(6.1, 2.6, 2.45), pm({color: 0xffffff}), cont);
+  const silo = pm({color: 0xe8e9ec, metalness: 0.4, roughness: 0.45});
+  for (const [x, z] of lugaresFora(3, 34, 100, 50)) {
+    peca(gPista, new THREE.CylinderGeometry(4, 4, 18, 14), silo, x, 9, z);
+    peca(gPista, new THREE.ConeGeometry(4.3, 3, 14), silo, x, 19.5, z);
+    peca(gPista, new THREE.CylinderGeometry(4.08, 4.08, 1.2, 14), faixa, x, 15, z);
+  }
+  arvores(50);
+  const i0 = reta(), i1 = (i0 + 80) % N, off = MURO + 4;
+  const a = new THREE.Vector3().copy(P[i0]).addScaledVector(NR[i0], off), b = new THREE.Vector3().copy(P[i1]).addScaledVector(NR[i1], off);
+  const comp = a.distanceTo(b), ang = Math.atan2(b.x - a.x, b.z - a.z), meio = a.clone().add(b).multiplyScalar(0.5);
+  const esteira = new THREE.Group(); esteira.position.copy(meio); esteira.rotation.y = ang; gPista.add(esteira);
+  caixa(esteira, 1.8, 0.35, comp, pm({color: 0x2c2e33}), 0, 1.05, 0);
+  for (const s of [-1, 1]) caixa(esteira, 0.12, 0.35, comp, pm({color: 0xffc400}), s * 0.95, 1.3, 0);
+  for (let zz = -comp / 2 + 2; zz < comp / 2; zz += 6) for (const s of [-1, 1]) caixa(esteira, 0.15, 0.9, 0.15, pm({color: 0x55585e}), s * 0.8, 0.45, zz);
+  const nb = Math.floor(comp / 5), rolam = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.42, 0.95, 14),
+    new THREE.MeshStandardMaterial({color: 0xc9cdd5, metalness: 0.85, roughness: 0.3}), nb);
+  rolam.castShadow = true; esteira.add(rolam);
+  animaPista = (t) => {
+    for (let n = 0; n < nb; n++) {
+      const zz = ((n * 5 + t * 2.2) % comp) - comp / 2;
+      rolam.setMatrixAt(n, _mx.compose(_v.set(0, 1.72, zz), _q.identity(), _s.set(1, 1, 1)));
+    }
+    rolam.instanceMatrix.needsUpdate = true;
+  };
+}
+function decorLupulo() {
+  arvores(200);
+  const postes = [], ramas = [], fios = [];
+  for (const [cx, cz] of lugaresFora(6, 34, 120, 90)) {
+    const ang = rnd() * Math.PI, ca = Math.cos(ang), sa = Math.sin(ang);
+    for (let f = -4; f <= 4; f++) {
+      let lin = 0, z0 = null, z1 = null;
+      for (let c = -8; c <= 8; c++) {
+        const lx = c * 4.2, lz = f * 6, x = cx + lx * ca - lz * sa, z = cz + lx * sa + lz * ca;
+        if (distPista(x, z) < MURO + 5) continue;
+        postes.push([x, 3.8, z]); ramas.push([x, 3.5, z, rnd() * 6, 0.9 + rnd() * 0.25, 0.85 + rnd() * 0.3]); lin++;
+        if (z0 === null) z0 = c; z1 = c;
+      }
+      if (lin > 1) { const m = (z0 + z1) / 2 * 4.2, lz = f * 6; fios.push([cx + m * ca - lz * sa, 7.5, cz + m * sa + lz * ca, -ang + Math.PI / 2, 1, 1, (z1 - z0) * 4.2]); }
+    }
+  }
+  inst(new THREE.CylinderGeometry(0.09, 0.11, 7.6, 5), pm({color: 0x7a5a38}), postes);
+  inst(new THREE.ConeGeometry(0.75, 6, 6), pm({color: 0x5aa83a}), ramas);
+  inst(new THREE.BoxGeometry(0.04, 0.04, 1), pm({color: 0x3a3a3a}), fios, false);
+  const [[bx, bz]] = lugaresFora(1, 16, 70);
+  const vira = viraPista(bx, bz), inox = pm({color: 0xd6dadf, metalness: 0.75, roughness: 0.28}), cerv = new THREE.Group();
+  cerv.position.set(bx, 0, bz); cerv.rotation.y = vira; gPista.add(cerv);
+  for (let n = 0; n < 6; n++) {
+    const x = (n % 3 - 1) * 5.2, z = -6 - Math.floor(n / 3) * 5.4;
+    peca(cerv, new THREE.CylinderGeometry(1.9, 1.9, 7.5, 14), inox, x, 6.4, z);
+    peca(cerv, new THREE.SphereGeometry(1.9, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), inox, x, 10.15, z);
+    peca(cerv, new THREE.ConeGeometry(1.9, 1.8, 14), inox, x, 1.75, z, Math.PI, 0, 0);
+    for (const s of [-1, 1]) caixa(cerv, 0.18, 2.6, 0.18, inox, x + s * 1.3, 1.3, z);
+  }
+  caixa(cerv, 16, 7, 9, pm({color: 0x9c3b2a}), 0, 3.5, 6).receiveShadow = true;
+  peca(cerv, prisma(17, 2.6, 10), pm({color: 0x3b2a22, side: THREE.DoubleSide}), 0, 7, 6);
+  const tC = texTexto('Cervejaria', '#2f8f2f', '#ffffff', 1024, 200, 120), mC = new THREE.MeshStandardMaterial({map: tC, emissive: 0xffffff, emissiveMap: tC, emissiveIntensity: 0.35});
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(10, 1.95), mC); pl.position.set(0, 5, 10.55); cerv.add(pl);
+  for (const [x, z] of lugaresFora(2, 30, 120, 80)) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = viraPista(x, z); gPista.add(g);
+    caixa(g, 12, 6, 16, pm({color: 0xa8322a}), 0, 3, 0).receiveShadow = true;
+    peca(g, prisma(16.6, 4, 13), pm({color: 0x4a3a30, side: THREE.DoubleSide}), 0, 6, 0, 0, Math.PI / 2, 0);
+    caixa(g, 4, 4.5, 0.2, pm({color: 0xf2efe8}), 0, 2.25, 8.02);
+  }
+  const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2, morros = [];
+  for (let n = 0; n < 16; n++) { const a = n / 16 * Math.PI * 2 + rnd() * 0.3, r = 470 + rnd() * 120; morros.push([cx + Math.cos(a) * r, 0, cz + Math.sin(a) * r, rnd() * 6, 80 + rnd() * 60, 40 + rnd() * 40]); }
+  const mMorro = inst(new THREE.ConeGeometry(1, 1, 7), pm({color: 0x3f7f34}), morros.map(([x, , z, r, s, h]) => [x, h / 2, z, r, s, h, s]), false);
+  mMorro.receiveShadow = false;
+}
+function decorPraia() {
+  const marZ = minZ - MURO - 26;
+  const naAreia = (x, z) => z > marZ + 5;
+  const mar = new THREE.Mesh(new THREE.PlaneGeometry(4000, 2000), new THREE.MeshStandardMaterial({color: 0x1798c4, roughness: 0.25, metalness: 0.15}));
+  mar.rotation.x = -Math.PI / 2; mar.position.set(0, 0.06, marZ - 1000); gPista.add(mar);
+  const molhada = new THREE.Mesh(new THREE.PlaneGeometry(4000, 7), new THREE.MeshStandardMaterial({color: 0xc2ab72, roughness: 1}));
+  molhada.rotation.x = -Math.PI / 2; molhada.position.set(0, 0.05, marZ + 3); gPista.add(molhada);
+  const espuma = new THREE.Mesh(new THREE.PlaneGeometry(4000, 2.2), new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.6, transparent: true, opacity: 0.85}));
+  espuma.rotation.x = -Math.PI / 2; espuma.position.set(0, 0.08, marZ); gPista.add(espuma);
+  const coq = new THREE.Group(), tronco = pm({color: 0x8a6a43}), folha = pm({color: 0x3e9b3a, side: THREE.DoubleSide}), coco = pm({color: 0x5a3d22});
+  const pts = Array.from({length: 6}, (_, i) => [0.06 * i * i, i * 1.5, 0]);
+  for (let i = 0; i < 5; i++) osso(coq, pts[i], pts[i + 1], 0.3 - i * 0.025, tronco, 6);
+  const topo = pts[5];
+  for (let n = 0; n < 8; n++) {
+    const a = n / 8 * Math.PI * 2, dir = new THREE.Vector3(Math.cos(a) * 0.86, -0.42, Math.sin(a) * 0.86).normalize();
+    const geo = new THREE.ConeGeometry(0.5, 4.4, 4); geo.scale(1, 1, 0.22);
+    const f = peca(coq, geo, folha, topo[0] + dir.x * 2.1, topo[1] + 0.2 + dir.y * 2.1, topo[2] + dir.z * 2.1);
+    f.quaternion.setFromUnitVectors(_cima, dir);
+  }
+  for (let n = 0; n < 3; n++) peca(coq, new THREE.IcosahedronGeometry(0.22, 0), coco, topo[0] + Math.cos(n * 2.1) * 0.3, topo[1] - 0.25, Math.sin(n * 2.1) * 0.3);
+  const lugCoq = lugaresFora(150, 4, 130, 0, naAreia);
+  for (let x = minX - 120; x < maxX + 120; x += 9 + rnd() * 6) lugCoq.push([x, marZ + 10 + rnd() * 10]);
+  instModelo(coq, lugCoq.filter(([x, z]) => distPista(x, z) > MURO + 3).map(([x, z]) => [x, 0, z, rnd() * 6, 0.85 + rnd() * 0.4]));
+  const madeira = pm({color: 0x9b6b3d}), palha = pm({color: 0xd8b36a}), balcao = pm({color: 0xf2efe6}), laranja = pm({color: 0xff7a00});
+  for (const [x, z] of lugaresFora(9, 4, 70, 30, naAreia)) {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = viraPista(x, z); gPista.add(g);
+    peca(g, new THREE.CylinderGeometry(2.6, 2.6, 2.4, 6), madeira, 0, 1.2, 0);
+    caixa(g, 3.6, 1.1, 0.8, balcao, 0, 0.55, 2.6);
+    peca(g, new THREE.ConeGeometry(4.4, 2.4, 6), palha, 0, 3.6, 0);
+    peca(g, new THREE.CylinderGeometry(0.06, 0.06, 2.4, 5), madeira, 0, 5.6, 0);
+    caixa(g, 1.4, 0.8, 0.05, laranja, 0.7, 6.3, 0);
+  }
+  const sois = lugaresFora(70, 3, 120, 5, (x, z) => naAreia(x, z) && z < marZ + 70), coresSol = [0xff5a5a, 0xffd23a, 0x3aa0ff, 0xff7a00, 0xffffff, 0x2ecc71];
+  inst(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 5), pm({color: 0xf2f2f2}), sois.map(([x, z]) => [x, 1.2, z]));
+  inst(new THREE.ConeGeometry(1.7, 0.7, 8), pm({color: 0xffffff}), sois.map(([x, z]) => [x, 2.45, z, rnd() * 6, 1, 1, 1, coresSol[Math.floor(rnd() * coresSol.length)]]));
+  inst(new THREE.BoxGeometry(1, 0.03, 1.9), pm({color: 0xffffff}), sois.map(([x, z]) => [x + 1.3, 0.03, z, rnd() * 6, 1, 1, 1, coresSol[Math.floor(rnd() * coresSol.length)]]), false);
+  const barcos = [];
+  for (let n = 0; n < 6; n++) {
+    const g = new THREE.Group(); g.position.set(minX - 60 + rnd() * (maxX - minX + 120), 0, marZ - 25 - rnd() * 90); g.rotation.y = rnd() * 6; gPista.add(g);
+    peca(g, prisma(1.8, -0.9, 5), pm({color: 0xffffff, side: THREE.DoubleSide}), 0, 0.6, 0, 0, Math.PI / 2, 0);
+    caixa(g, 1.6, 0.25, 4.6, pm({color: 0x8a5a33}), 0, 0.6, 0);
+    peca(g, new THREE.CylinderGeometry(0.05, 0.05, 5, 5), pm({color: 0xdddddd}), 0, 3.1, 0);
+    peca(g, prisma(0.05, 4.2, 2.6), pm({color: [0xff7a00, 0xffffff, 0x3aa0ff][n % 3], side: THREE.DoubleSide}), 0, 0.9, -1.3, 0, Math.PI / 2, 0);
+    barcos.push(g);
+  }
+  animaPista = (t) => {
+    espuma.position.z = marZ + Math.sin(t * 0.9) * 1.4; espuma.material.opacity = 0.6 + 0.3 * Math.sin(t * 0.9 + 1);
+    barcos.forEach((g, n) => { g.position.y = Math.sin(t * 1.3 + n) * 0.15; g.rotation.z = Math.sin(t * 1.1 + n * 2) * 0.06; });
+  };
+}
+function texJanelas(cores) {
+  return tex(128, 256, (g, w, h) => {
+    g.fillStyle = '#161922'; g.fillRect(0, 0, w, h);
+    for (let y = 6; y < h - 8; y += 16) for (let x = 6; x < w - 8; x += 20) {
+      g.fillStyle = rnd() < 0.55 ? cores[Math.floor(rnd() * cores.length)] : '#232736'; g.fillRect(x, y, 12, 9);
+    }
+  });
+}
+function texNeon(txt, cor) {
+  return tex(512, 160, (g, w, h) => {
+    g.fillStyle = '#0c0a16'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = cor; g.lineWidth = 6; g.shadowColor = cor; g.shadowBlur = 18; g.strokeRect(10, 10, w - 20, h - 20);
+    g.font = '900 86px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#ffffff'; g.shadowBlur = 26; g.fillText(txt, w / 2, h / 2 + 4); g.fillStyle = cor; g.globalAlpha = 0.6; g.fillText(txt, w / 2, h / 2 + 4);
+  });
+}
+function decorNoite() {
+  const ceu = new Float32Array(1800), cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
+  for (let n = 0; n < 600; n++) { const a = rnd() * Math.PI * 2, e = 0.12 + rnd() * 1.3; ceu.set([cx + Math.cos(a) * Math.cos(e) * 900, Math.sin(e) * 900, cz + Math.sin(a) * Math.cos(e) * 900], n * 3); }
+  const gEst = new THREE.BufferGeometry(); gEst.setAttribute('position', new THREE.BufferAttribute(ceu, 3));
+  const est = new THREE.Points(gEst, new THREE.PointsMaterial({color: 0xffffff, size: 2, sizeAttenuation: false, fog: false})); est.frustumCulled = false; gPista.add(est);
+  const lua = new THREE.Mesh(new THREE.SphereGeometry(22, 16, 12), new THREE.MeshBasicMaterial({color: 0xf6f1d6, fog: false})); lua.position.set(cx + 380, 330, cz - 620); gPista.add(lua);
+  const teto = pm({color: 0x12141a});
+  for (const cores of [['#ffd37a', '#ffe9b0'], ['#9be7ff', '#ffd37a', '#ff9be0']]) {
+    const tJ = texJanelas(cores), lado = new THREE.MeshStandardMaterial({map: tJ, emissive: 0xffffff, emissiveMap: tJ, emissiveIntensity: 0.85, roughness: 0.8});
+    const lista = lugaresFora(42, 7, 150, 17).map(([x, z]) => [x, 0, z, viraPista(x, z), 10 + rnd() * 10, 14 + rnd() * 56, 10 + rnd() * 10]);
+    inst(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), [lado, lado, teto, teto, lado, lado], lista);
+  }
+  const neon = [['myTapp', '#ff7a00'], ['CHOPE', '#ffd23a'], ['Chope', '#20e0ff'], ['Sirva-se', '#ff4fd8'], ['myTapp', '#b44cff'], ['BAR', '#39ff88'],
+    ['Happy hour', '#20e0ff'], ['CHOPE', '#ff4fd8']];
+  lugaresFora(neon.length, 3, 40, 70).forEach(([x, z], n) => {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = viraPista(x, z); gPista.add(g);
+    const q = new THREE.Mesh(new THREE.PlaneGeometry(8, 2.5), new THREE.MeshBasicMaterial({map: texNeon(...neon[n]), side: THREE.DoubleSide})); q.position.y = 5.2; g.add(q);
+    for (const s of [-1, 1]) caixa(g, 0.22, 4, 0.22, pm({color: 0x222228}), s * 3, 2, -0.1);
+  });
+  const postes = [], luzes = [];
+  for (let i = 0; i < N; i += 40) for (const s of [-1, 1]) {
+    const o = s * (MURO + 1.6), x = P[i].x + NR[i].x * o, z = P[i].z + NR[i].z * o;
+    postes.push([x, 3.2, z]); luzes.push([x - NR[i].x * s * 0.9, 6.3, z - NR[i].z * s * 0.9]);
+  }
+  inst(new THREE.CylinderGeometry(0.1, 0.14, 6.4, 6), pm({color: 0x2a2c33}), postes);
+  inst(new THREE.SphereGeometry(0.42, 8, 6), new THREE.MeshBasicMaterial({color: 0xffe2a0}), luzes, false);
+  let tx = cx, tz = cz, td = 0;
+  for (let n = 0; n < 400; n++) {
+    const x = minX + rnd() * (maxX - minX), z = minZ + rnd() * (maxZ - minZ);
+    if (!dentro(x, z)) continue;
+    const d = distPista(x, z); if (d > td) { td = d; tx = x; tz = z; }
+  }
+  const torre = new THREE.Group(); torre.position.set(tx, 0, tz); gPista.add(torre);
+  const inox = pm({color: 0xd9dde2, metalness: 0.8, roughness: 0.25}), escuro = pm({color: 0x1c1d22});
+  peca(torre, new THREE.CylinderGeometry(4, 4.4, 2, 12), escuro, 0, 1, 0);
+  peca(torre, new THREE.CylinderGeometry(1.6, 1.8, 16, 14), inox, 0, 10, 0);
+  peca(torre, new THREE.CylinderGeometry(2.6, 2.6, 2.4, 14), inox, 0, 17.6, 0);
+  for (let n = 0; n < 4; n++) {
+    const a = n * Math.PI / 2, x = Math.sin(a), z = Math.cos(a);
+    osso(torre, [x * 2.4, 17.4, z * 2.4], [x * 4.2, 17.4, z * 4.2], 0.28, inox, 8);
+    osso(torre, [x * 4.2, 17.5, z * 4.2], [x * 4.2, 16.2, z * 4.2], 0.24, inox, 8);
+    osso(torre, [x * 3.6, 17.7, z * 3.6], [x * 3.6, 19.6, z * 3.6], 0.18, pm({color: 0xff7a00}), 6);
+  }
+  const copo = new THREE.Mesh(new THREE.CylinderGeometry(3, 2.4, 6.5, 14),
+    new THREE.MeshStandardMaterial({color: 0xffa21a, emissive: 0xff9a10, emissiveIntensity: 0.85, roughness: 0.3, flatShading: true}));
+  copo.position.y = 22.2; torre.add(copo);
+  peca(torre, new THREE.CylinderGeometry(3.15, 3.05, 1.3, 14), pm({color: 0xfffaf0, emissive: 0xfff4dc, emissiveIntensity: 0.4}), 0, 26.1, 0);
+  const anel = new THREE.Mesh(new THREE.TorusGeometry(4.6, 0.18, 6, 32), new THREE.MeshBasicMaterial({color: 0xff4fd8})); anel.rotation.x = Math.PI / 2; anel.position.y = 2.3; torre.add(anel);
+  animaPista = (t) => { anel.material.color.setHSL((t * 0.08) % 1, 0.9, 0.6); copo.material.emissiveIntensity = 0.75 + Math.sin(t * 2) * 0.12; };
+}
+function texNome(nome, cor) {
+  return tex(256, 64, (g, w, h) => {
+    g.fillStyle = 'rgba(0,0,0,.55)'; g.beginPath(); g.roundRect(4, 6, w - 8, h - 12, 18); g.fill();
+    g.fillStyle = hex(cor); g.font = '800 36px system-ui, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(nome, w / 2, h / 2 + 2);
+  });
+}
+const hex = (c) => '#' + c.toString(16).padStart(6, '0');
+const _mats = new Map();
+function M(cor, tipo = '') {
+  const ch = cor + tipo;
+  if (!_mats.has(ch)) {
+    const o = {color: cor, roughness: 0.75, flatShading: true};
+    if (tipo === 'lata') Object.assign(o, {roughness: 0.35, metalness: 0.35});
+    if (tipo === 'vidro') Object.assign(o, {roughness: 0.1, metalness: 0.3, transparent: true, opacity: 0.55, depthWrite: false});
+    if (tipo === 'luz') Object.assign(o, {emissive: cor, emissiveIntensity: 0.6, roughness: 0.3});
+    if (tipo === 'casco') Object.assign(o, {roughness: 0.3, metalness: 0.15, side: THREE.DoubleSide});
+    _mats.set(ch, new THREE.MeshStandardMaterial(o));
+  }
+  return _mats.get(ch);
+}
+const peca = (pai, geo, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; pai.add(m); return m;
+};
+const caixa = (pai, w, h, d, mat, x, y, z, rx, ry, rz) => peca(pai, new THREE.BoxGeometry(w, h, d), mat, x, y, z, rx, ry, rz);
+const _d = new THREE.Vector3(), _cima = new THREE.Vector3(0, 1, 0);
+function osso(pai, a, b, r, mat, lados = 6) {
+  _d.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  const m = peca(pai, new THREE.CylinderGeometry(r, r, _d.length(), lados), mat, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+  m.quaternion.setFromUnitVectors(_cima, _d.normalize()); return m;
+}
+function pneu(pai, r, larg, x, y, z, aro = 0xb8bcc2, lados = 12) {
+  const geo = new THREE.CylinderGeometry(r, r, larg, lados); geo.rotateZ(Math.PI / 2);
+  const w = peca(pai, geo, M(0x1b1b1f), x, y, z); w.rotation.order = 'YXZ'; w.userData.solto = true;
+  const cubo = new THREE.CylinderGeometry(r * 0.55, r * 0.55, larg + 0.02, 6); cubo.rotateZ(Math.PI / 2);
+  peca(w, cubo, M(aro, 'lata'));
+  return w;
+}
+function fazPiloto(pai, def, op) {
+  const t = {pele: 0xd9a27c, cabelo: 'curto', corCabelo: 0x3a2a1f, barba: null, oculos: null, camiseta: def.cor,
+    calca: 0x2f4566, tenis: 0x2b2b2b, bermuda: false, ...def.tracos};
+  const q = op.quadril, inc = op.inc, e = op.escala || 1, g = new THREE.Group(); g.position.set(...q); g.scale.setScalar(e); pai.add(g);
+  const pele = M(t.pele), roupa = M(t.camiseta), calca = M(t.calca);
+  const sobe = (h) => [0, h * Math.cos(inc), h * Math.sin(inc)];
+  const rel = (p, s) => [s * p[0] / e, (p[1] - q[1]) / e, (p[2] - q[2]) / e];
+  peca(g, new THREE.CylinderGeometry(0.19, 0.24, 0.52, 7), roupa, ...sobe(0.26), inc, 0, 0);
+  caixa(g, 0.42, 0.16, 0.3, calca, 0, 0, 0.02);
+  for (const s of [-1, 1]) {
+    const [, oy, oz] = sobe(0.44), a = [s * 0.25, oy, oz], m = rel(op.mao, s);
+    const cot = a.map((v, i) => v + (m[i] - v) * 0.42);
+    osso(g, a, cot, 0.085, roupa); osso(g, cot, m, 0.062, pele);
+    peca(g, new THREE.IcosahedronGeometry(0.075, 0), pele, ...m);
+    if (op.joelho) {
+      const j = rel(op.joelho, s), p = rel(op.pe, s);
+      osso(g, [s * 0.12, 0, 0.02], j, 0.1, calca);
+      osso(g, j, p, t.bermuda ? 0.07 : 0.088, t.bermuda ? pele : calca);
+      caixa(g, 0.13, 0.1, 0.25, M(t.tenis), p[0], p[1] - 0.04, p[2] + 0.05);
+    }
+  }
+  const c = new THREE.Group(), R = 0.27; c.position.set(...sobe(0.8)); g.add(c);
+  const touca = (r, abre) => new THREE.SphereGeometry(r, 9, 6, 0, Math.PI * 2, 0, abre);
+  if (t.alien) {
+    const preto = M(0x050608), sombra = M(0x55704a), gorro = M(t.corCabelo);
+    peca(c, new THREE.CylinderGeometry(0.055, 0.075, 0.26, 6), pele, 0, -0.3, -0.02);
+    peca(c, new THREE.IcosahedronGeometry(R, 1), pele, 0, 0.07, 0).scale.set(1.06, 1.12, 1);
+    peca(c, new THREE.IcosahedronGeometry(0.15, 1), pele, 0, -0.13, 0.05).scale.set(1, 1.05, 0.95);
+    for (const s of [-1, 1]) {
+      const olho = peca(c, new THREE.SphereGeometry(0.1, 10, 7), preto, s * 0.125, 0.03, R * 0.86, 0, 0, s * -0.38);
+      olho.scale.set(1.2, 0.78, 0.5);
+      peca(c, new THREE.IcosahedronGeometry(0.018, 0), M(0xffffff), s * 0.125 + 0.035, 0.06, R * 0.86 + 0.05);
+    }
+    peca(c, new THREE.ConeGeometry(0.025, 0.05, 4), pele, 0, -0.07, R * 0.86, Math.PI / 2, 0, 0);
+    caixa(c, 0.08, 0.014, 0.02, sombra, 0, -0.15, R * 0.68);
+    peca(c, touca(R * 1.13, Math.PI * 0.5), gorro, 0, 0.13, -0.01);
+    peca(c, new THREE.CylinderGeometry(R * 1.15, R * 1.15, 0.11, 10), gorro, 0, 0.14, -0.01);
+    return;
+  }
+  peca(c, new THREE.IcosahedronGeometry(R, 1), pele).scale.set(1, 1.08, 1);
+  peca(c, new THREE.CylinderGeometry(0.09, 0.1, 0.18, 6), pele, 0, -0.3, -0.02);
+  for (const s of [-1, 1]) {
+    caixa(c, 0.08, 0.09, 0.02, M(0xffffff), s * 0.1, 0.02, R * 0.93);
+    caixa(c, 0.042, 0.06, 0.02, M(0x15151a), s * 0.1, 0.01, R * 0.93 + 0.012);
+    peca(c, new THREE.IcosahedronGeometry(0.065, 0), pele, s * R * 0.97, -0.02, -0.01);
+  }
+  peca(c, new THREE.ConeGeometry(0.045, 0.1, 4), pele, 0, -0.05, R * 0.98, Math.PI / 2, 0, 0);
+  caixa(c, 0.11, 0.028, 0.03, M(0x6b1430), 0, -0.14, R * 0.86);
+  const cab = M(t.corCabelo);
+  if (op.capacete) {
+    peca(c, new THREE.SphereGeometry(R * 1.24, 12, 9, Math.PI / 2 + 0.95, Math.PI * 2 - 1.9, 0, 2.2), M(def.cor, 'casco'), 0, 0.03, -0.02);
+    caixa(c, 0.46, 0.06, 0.2, M(0x1a2230, 'vidro'), 0, 0.3, 0.2, -0.6, 0, 0);
+  } else if (t.cabelo === 'gorro') {
+    peca(c, touca(R * 1.1, Math.PI * 0.5), cab, 0, 0.04, -0.01);
+    peca(c, new THREE.CylinderGeometry(R * 1.13, R * 1.13, 0.1, 9), cab, 0, 0.05, -0.01);
+  } else if (t.cabelo !== 'careca') {
+    peca(c, touca(R * 1.08, Math.PI * 0.47), cab, 0, 0.02, -0.02, -0.32, 0, 0);
+    if (t.cabelo === 'longo') {
+      caixa(c, 0.5, 0.5, 0.12, cab, 0, -0.14, -0.24);
+      for (const s of [-1, 1]) caixa(c, 0.08, 0.38, 0.28, cab, s * 0.26, -0.1, -0.06);
+      if (t.cachos) for (const y of [0.04, -0.13, -0.3]) for (const a of [-1.9, -1.3, -0.65, 0, 0.65, 1.3, 1.9])
+        peca(c, new THREE.IcosahedronGeometry(0.09, 0), cab, Math.sin(a) * 0.29, y + Math.abs(a) * 0.015, -Math.cos(a) * 0.29 - 0.03);
+    } else if (t.cabelo === 'rabo') {
+      peca(c, new THREE.IcosahedronGeometry(0.09, 0), cab, 0, 0.06, -0.32);
+      peca(c, new THREE.ConeGeometry(0.08, 0.34, 5), cab, 0, -0.13, -0.36, Math.PI, 0, 0);
+    } else if (t.cabelo === 'cacheado') {
+      for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; peca(c, new THREE.IcosahedronGeometry(0.1, 0), cab, Math.cos(a) * 0.2, 0.17 + (i % 2) * 0.06, Math.sin(a) * 0.2 - 0.04); }
+    }
+  }
+  if (t.barba) {
+    const b = M(t.barba);
+    if (t.barbona) {
+      peca(c, new THREE.IcosahedronGeometry(0.2, 1), b, 0, -0.22, 0.1).scale.set(1.3, 1.1, 0.85);
+      peca(c, new THREE.ConeGeometry(0.19, 0.3, 7), b, 0, -0.42, 0.13, Math.PI + 0.25, 0, 0);
+      for (const s of [-1, 1]) caixa(c, 0.09, 0.3, 0.28, b, s * 0.215, -0.08, 0.05);
+      caixa(c, 0.26, 0.06, 0.06, b, 0, -0.1, R * 0.92);
+    } else {
+      caixa(c, t.cavanhaque ? 0.17 : 0.34, 0.12, 0.1, b, 0, -0.2, 0.19);
+      if (!t.cavanhaque) for (const s of [-1, 1]) caixa(c, 0.08, 0.22, 0.24, b, s * 0.21, -0.1, 0.08);
+      caixa(c, 0.17, 0.04, 0.04, b, 0, -0.095, R * 0.92);
+    }
+  }
+  if (t.oculos) {
+    const o = M(t.oculos);
+    for (const s of [-1, 1]) {
+      const x = s * 0.1, z = R * 0.97 + 0.02;
+      if (t.armacao === 'quadrada') {
+        caixa(c, 0.16, 0.024, 0.02, o, x, 0.07, z); caixa(c, 0.16, 0.016, 0.02, o, x, -0.03, z);
+        for (const d of [-0.07, 0.07]) caixa(c, 0.022, 0.1, 0.02, o, x + d, 0.02, z);
+      } else peca(c, new THREE.TorusGeometry(0.075, 0.016, 4, 10), o, x, 0.02, z);
+      caixa(c, 0.018, 0.018, 0.26, o, s * 0.2, 0.03, 0.13);
+    }
+    caixa(c, 0.06, 0.018, 0.018, o, 0, 0.03, R + 0.02);
+  }
+}
+const LUZ = 0xfff6d8, LANT = 0xff2a2a, PRETO = 0x1d1f23;
+const interp = (pts, z) => {
+  if (z <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (z <= pts[i][0]) { const [z1, y1] = pts[i - 1], [z2, y2] = pts[i]; return y1 + (y2 - y1) * (z - z1) / (z2 - z1); }
+  return pts.at(-1)[1];
+};
+const CARROS = {
+  uno: {L: 3.69, W: 1.55, r: 0.28, eixoF: 1.15, eixoT: -1.21, placa: [0.42, 0.5], placaZ: 0.08, nariz: 0.05, rabo: 0.03, teto: 0.9,
+    cima: [[-1.845, 0.84], [-1.83, 1.0], [-1.77, 1.4], [-1.62, 1.44], [-0.15, 1.45], [0.6, 1.0], [1.6, 0.88], [1.82, 0.84], [1.845, 0.7]],
+    cintura: [[-1.845, 0.98], [-1.4, 0.98], [0.6, 0.96], [1.845, 0.88]],
+    vid: {rb: -1.82, rr: -1.7, rf: -0.15, wb: 0.6, l0: -1.55, l1: 0.48, b: -0.45},
+    det(c, {fz, tz, preto, W}) {
+      const pc = M(0x26282b);
+      caixa(c, W * 0.96, 0.22, 0.18, pc, 0, 0.42, fz(0.42) - 0.04);
+      caixa(c, W * 0.96, 0.22, 0.18, pc, 0, 0.42, tz(0.42) + 0.04);
+      caixa(c, W * 0.86, 0.17, 0.04, preto, 0, 0.72, fz(0.72) + 0.01);
+      for (const s of [-1, 1]) {
+        caixa(c, 0.3, 0.14, 0.04, M(LUZ, 'luz'), s * 0.55, 0.72, fz(0.72) + 0.02);
+        caixa(c, 0.16, 0.3, 0.04, M(LANT, 'luz'), s * 0.62, 0.86, tz(0.86) - 0.02);
+      }
+    }},
+  p208: {L: 4.06, W: 1.75, r: 0.31, eixoF: 1.19, eixoT: -1.35, placa: [0.48, 0.55], placaZ: 0.06,
+    cima: [[-2.03, 0.88], [-1.96, 1.04], [-1.72, 1.36], [-1.3, 1.42], [-0.25, 1.43], [0.66, 0.98], [1.6, 0.84], [1.96, 0.74], [2.03, 0.62]],
+    cintura: [[-2.03, 0.98], [-1.5, 1.0], [0.66, 0.92], [2.03, 0.84]],
+    vid: {rb: -1.96, rr: -1.72, rf: -0.25, wb: 0.66, l0: -1.6, l1: 0.55, b: -0.55},
+    det(c, {fz, tz, preto}) {
+      caixa(c, 1.0, 0.24, 0.05, preto, 0, 0.5, fz(0.5) + 0.01);
+      for (const s of [-1, 1]) {
+        caixa(c, 0.42, 0.08, 0.12, M(LUZ, 'luz'), s * 0.56, 0.74, fz(0.74) - 0.02, 0, s * 0.3, 0);
+        caixa(c, 0.04, 0.3, 0.04, M(LUZ, 'luz'), s * 0.68, 0.48, fz(0.48) + 0.01);
+        for (let i = 0; i < 3; i++) caixa(c, 0.045, 0.16, 0.03, M(LANT, 'luz'), s * (0.46 + i * 0.09), 0.84, tz(0.84) - 0.025);
+      }
+      caixa(c, 1.45, 0.17, 0.03, preto, 0, 0.84, tz(0.84) - 0.01);
+    }},
+  march: {L: 3.83, W: 1.665, r: 0.29, eixoF: 1.135, eixoT: -1.315, placa: [0.54, 0.6], nariz: 0.18, rabo: 0.1, teto: 0.82,
+    cima: [[-1.915, 0.9], [-1.88, 1.1], [-1.72, 1.44], [-1.45, 1.52], [-0.2, 1.53], [0.62, 1.0], [1.45, 0.9], [1.85, 0.8], [1.915, 0.66]],
+    cintura: [[-1.915, 1.0], [-1.4, 1.0], [0.62, 0.95], [1.915, 0.86]],
+    vid: {rb: -1.88, rr: -1.6, rf: -0.2, wb: 0.62, l0: -1.55, l1: 0.5, b: -0.5},
+    det(c, {fz, tz, preto}) {
+      caixa(c, 0.5, 0.11, 0.05, preto, 0, 0.66, fz(0.66) + 0.01);
+      caixa(c, 0.9, 0.13, 0.05, preto, 0, 0.4, fz(0.4) + 0.01);
+      for (const s of [-1, 1]) {
+        peca(c, new THREE.IcosahedronGeometry(0.2, 1), M(LUZ, 'luz'), s * 0.55, 0.8, fz(0.8) - 0.06).scale.set(1.3, 0.75, 0.6);
+        caixa(c, 0.14, 0.36, 0.04, M(LANT, 'luz'), s * 0.66, 1.0, tz(1.0) - 0.02);
+      }
+    }},
+  corsa: {L: 3.73, W: 1.61, r: 0.27, eixoF: 1.145, eixoT: -1.295, placa: [0.44, 0.44], placaZ: 0.08, nariz: 0.2, rabo: 0.12,
+    cima: [[-1.865, 0.86], [-1.82, 1.02], [-1.62, 1.33], [-1.3, 1.41], [-0.2, 1.42], [0.6, 0.96], [1.45, 0.84], [1.82, 0.74], [1.865, 0.6]],
+    cintura: [[-1.865, 0.96], [-1.3, 0.96], [0.6, 0.92], [1.865, 0.82]],
+    vid: {rb: -1.82, rr: -1.62, rf: -0.2, wb: 0.6, l0: -1.5, l1: 0.5, b: -0.7},
+    det(c, {fz, tz, preto, W}) {
+      const pc = M(0x3c3f44);
+      caixa(c, W * 0.92, 0.26, 0.2, pc, 0, 0.42, fz(0.42) - 0.05);
+      caixa(c, W * 0.94, 0.26, 0.2, pc, 0, 0.42, tz(0.42) + 0.05);
+      for (const s of [-1, 1]) caixa(c, 0.02, 0.07, 2.0, pc, s * (W / 2 + 0.005), 0.6, -0.15);
+      caixa(c, 0.36, 0.06, 0.04, preto, 0, 0.68, fz(0.68) + 0.01);
+      for (const s of [-1, 1]) {
+        peca(c, new THREE.IcosahedronGeometry(0.16, 1), M(LUZ, 'luz'), s * 0.48, 0.7, fz(0.7) - 0.05).scale.set(1.45, 0.75, 0.5);
+        caixa(c, 0.22, 0.24, 0.04, M(LANT, 'luz'), s * 0.55, 0.72, tz(0.72) - 0.02);
+        caixa(c, 0.22, 0.07, 0.04, M(0xffa424, 'luz'), s * 0.55, 0.88, tz(0.88) - 0.02);
+      }
+    }},
+  ex2: {L: 4.135, W: 1.805, r: 0.32, eixoF: 1.27, eixoT: -1.38, placa: [0.56, 0.6], nariz: 0.16, rabo: 0.08,
+    cima: [[-2.07, 0.95], [-2.0, 1.12], [-1.78, 1.48], [-1.4, 1.56], [-0.2, 1.57], [0.68, 1.02], [1.6, 0.9], [2.0, 0.8], [2.07, 0.66]],
+    cintura: [[-2.07, 1.04], [-1.5, 1.04], [0.68, 0.98], [2.07, 0.9]],
+    vid: {rb: -2.0, rr: -1.78, rf: -0.2, wb: 0.68, l0: -1.65, l1: 0.58, b: -0.6},
+    det(c, {fz, tz, preto}) {
+      caixa(c, 1.35, 0.035, 0.05, M(LUZ, 'luz'), 0, 0.86, fz(0.86));
+      for (const s of [-1, 1]) caixa(c, 0.3, 0.08, 0.06, M(LUZ, 'luz'), s * 0.6, 0.74, fz(0.74));
+      caixa(c, 0.95, 0.15, 0.05, preto, 0, 0.4, fz(0.4) + 0.01);
+      caixa(c, 1.5, 0.06, 0.03, M(LANT, 'luz'), 0, 0.98, tz(0.98) - 0.015);
+    }},
+  fit: {L: 3.99, W: 1.695, r: 0.3, eixoF: 1.195, eixoT: -1.335, placa: [0.55, 0.6], nariz: 0.14, rabo: 0.05, teto: 0.82,
+    cima: [[-1.995, 0.9], [-1.97, 1.2], [-1.88, 1.5], [-1.5, 1.53], [-0.45, 1.535], [0.85, 0.98], [1.6, 0.84], [1.95, 0.74], [1.995, 0.62]],
+    cintura: [[-1.995, 1.0], [-1.5, 1.0], [0.85, 0.92], [1.995, 0.84]],
+    vid: {rb: -1.97, rr: -1.86, rf: -0.45, wb: 0.85, l0: -1.75, l1: 0.75, b: -0.5},
+    det(c, {fz, tz, preto}) {
+      caixa(c, 0.7, 0.09, 0.05, preto, 0, 0.7, fz(0.7) + 0.01);
+      caixa(c, 0.95, 0.14, 0.05, preto, 0, 0.42, fz(0.42) + 0.01);
+      for (const s of [-1, 1]) {
+        caixa(c, 0.5, 0.12, 0.14, M(LUZ, 'luz'), s * 0.55, 0.8, fz(0.8) - 0.04, 0, s * 0.35, 0);
+        caixa(c, 0.12, 0.42, 0.04, M(LANT, 'luz'), s * 0.6, 1.08, tz(1.08) - 0.02);
+      }
+    }},
+  renegade: {L: 4.26, W: 1.805, r: 0.35, eixoF: 1.23, eixoT: -1.34, vao: 0.38, placa: [0.55, 0.62], placaZ: 0.07, nariz: 0.06, rabo: 0.04, teto: 0.88,
+    cima: [[-2.13, 1.1], [-2.09, 1.62], [-1.92, 1.68], [0.0, 1.69], [0.7, 1.12], [1.85, 1.08], [2.1, 1.05], [2.13, 0.92]],
+    cintura: [[-2.13, 1.12], [-1.5, 1.12], [0.7, 1.1], [2.13, 1.04]],
+    vid: {rb: -2.13, rr: -2.09, rf: 0.0, wb: 0.7, l0: -1.85, l1: 0.6, b: -0.55},
+    det(c, {fz, tz, preto, P, m}) {
+      for (let i = -3; i <= 3; i++) caixa(c, 0.06, 0.24, 0.04, preto, i * 0.1, 0.86, fz(0.86) + 0.01);
+      caixa(c, 1.2, 0.2, 0.06, preto, 0, 0.55, fz(0.55) + 0.01);
+      caixa(c, 0.9, 0.1, 0.06, M(0x8a8f96, 'lata'), 0, 0.42, fz(0.42) + 0.03);
+      for (const s of [-1, 1]) {
+        peca(c, new THREE.CylinderGeometry(0.15, 0.15, 0.06, 12), M(LUZ, 'luz'), s * 0.6, 0.88, fz(0.88) + 0.01, Math.PI / 2, 0, 0);
+        caixa(c, 0.3, 0.26, 0.03, M(0x4a0c0c), s * 0.62, 0.98, tz(0.98) - 0.015);
+        for (const r of [0.72, -0.72]) caixa(c, 0.26, 0.045, 0.03, M(LANT, 'luz'), s * 0.62, 0.98, tz(0.98) - 0.035, 0, 0, r);
+        caixa(c, 0.05, 0.06, 1.5, preto, s * 0.66, 1.73, -0.95);
+        for (const z of [m.eixoF, m.eixoT]) peca(c, new THREE.TorusGeometry(m.r + 0.08, 0.05, 4, 10, Math.PI), preto, s * (P(z, 1)[0] + 0.02), m.r, z, 0, Math.PI / 2, 0);
+      }
+    }},
+  kwid: {L: 3.68, W: 1.58, r: 0.28, eixoF: 1.12, eixoT: -1.3, vao: 0.38, placa: [0.5, 0.5], placaZ: 0.07, nariz: 0.1, rabo: 0.05,
+    cima: [[-1.84, 0.94], [-1.8, 1.1], [-1.62, 1.38], [-1.3, 1.44], [-0.15, 1.45], [0.6, 1.02], [1.5, 0.96], [1.8, 0.88], [1.84, 0.74]],
+    cintura: [[-1.84, 1.04], [-1.3, 1.04], [0.6, 1.0], [1.84, 0.94]],
+    vid: {rb: -1.8, rr: -1.62, rf: -0.15, wb: 0.6, l0: -1.5, l1: 0.5, b: -0.5},
+    det(c, {fz, tz, preto, P, m, W}) {
+      caixa(c, W * 0.94, 0.24, 0.16, preto, 0, 0.48, fz(0.48) - 0.04);
+      caixa(c, W * 0.94, 0.22, 0.16, preto, 0, 0.48, tz(0.48) + 0.04);
+      caixa(c, 0.72, 0.14, 0.05, preto, 0, 0.7, fz(0.7) + 0.01);
+      caixa(c, 0.72, 0.03, 0.05, M(0xc0c4ca, 'lata'), 0, 0.8, fz(0.8) + 0.01);
+      for (const s of [-1, 1]) {
+        caixa(c, 0.32, 0.12, 0.1, M(LUZ, 'luz'), s * 0.5, 0.8, fz(0.8) - 0.02, 0, s * 0.25, -s * 0.15);
+        caixa(c, 0.13, 0.3, 0.04, M(LANT, 'luz'), s * 0.6, 0.98, tz(0.98) - 0.02);
+        caixa(c, 0.04, 0.05, 1.3, preto, s * 0.58, 1.49, -0.75);
+        for (const z of [m.eixoF, m.eixoT]) peca(c, new THREE.TorusGeometry(m.r + 0.08, 0.05, 4, 10, Math.PI), preto, s * (P(z, 1)[0] + 0.02), m.r, z, 0, Math.PI / 2, 0);
+      }
+    }},
+  hb20: {L: 3.94, W: 1.72, r: 0.3, eixoF: 1.19, eixoT: -1.34, placa: [0.42, 0.55], placaZ: 0.06,
+    cima: [[-1.97, 0.9], [-1.92, 1.06], [-1.68, 1.4], [-1.3, 1.46], [-0.2, 1.47], [0.64, 0.98], [1.55, 0.86], [1.9, 0.76], [1.97, 0.62]],
+    cintura: [[-1.97, 1.0], [-1.4, 1.0], [0.64, 0.93], [1.97, 0.85]],
+    vid: {rb: -1.92, rr: -1.68, rf: -0.2, wb: 0.64, l0: -1.58, l1: 0.54, b: -0.55},
+    det(c, {fz, tz, preto}) {
+      caixa(c, 1.05, 0.36, 0.05, preto, 0, 0.56, fz(0.56) + 0.01);
+      for (const s of [-1, 1]) {
+        caixa(c, 0.42, 0.08, 0.12, M(LUZ, 'luz'), s * 0.56, 0.76, fz(0.76) - 0.02, 0, s * 0.3, 0);
+        caixa(c, 0.34, 0.11, 0.03, M(LANT, 'luz'), s * 0.56, 0.95, tz(0.95) - 0.015);
+      }
+      caixa(c, 0.82, 0.03, 0.03, M(LANT, 'luz'), 0, 0.95, tz(0.95) - 0.015);
+    }},
+  versa: {L: 4.495, W: 1.74, r: 0.31, eixoF: 1.37, eixoT: -1.25, placa: [0.42, 0.8], placaZ: 0.06, nariz: 0.14, rabo: 0.08, banco: 0.4,
+    cima: [[-2.2475, 0.9], [-2.2, 1.03], [-2.0, 1.08], [-1.6, 1.1], [-0.95, 1.42], [-0.35, 1.465], [0.25, 1.44], [1.0, 1.0], [1.75, 0.9], [2.15, 0.8], [2.2475, 0.6]],
+    cintura: [[-2.2475, 1.04], [-1.6, 1.05], [-1.0, 1.03], [1.0, 0.96], [2.2475, 0.88]],
+    vid: {rb: -1.6, rr: -0.95, rf: 0.25, wb: 1.0, l0: -1.35, l1: 0.95, b: -0.15},
+    det(c, {fz, tz, preto, P, W}) {
+      const cromo = M(0xd4d8dd, 'lata');
+      caixa(c, 0.74, 0.3, 0.05, preto, 0, 0.6, fz(0.6) + 0.01);
+      caixa(c, W * 0.9, 0.18, 0.16, preto, 0, 0.36, fz(0.36) - 0.06);
+      caixa(c, 0.9, 0.03, 0.03, cromo, 0, 0.94, tz(0.94) - 0.01);
+      for (const s of [-1, 1]) {
+        osso(c, [s * 0.4, 0.77, fz(0.77) + 0.01], [s * 0.05, 0.44, fz(0.44) + 0.02], 0.028, cromo, 4);
+        caixa(c, 0.46, 0.09, 0.12, M(LUZ, 'luz'), s * 0.6, 0.78, fz(0.78) - 0.03, 0, s * 0.35, s * 0.12);
+        caixa(c, 0.36, 0.12, 0.05, M(LANT, 'luz'), s * 0.6, 0.98, tz(0.98) - 0.01, 0, -s * 0.2, 0);
+        osso(c, P(-1.34, 3, s), P(-0.98, 4, s), 0.045, preto, 4);
+      }
+    }},
+};
+function carroceria(m) {
+  const h = m.L / 2, vid = m.vid, ra = m.r + 0.06, tw = m.teto ?? 0.8;
+  const meia = (z) => {
+    let w = m.W / 2; const uf = (z - h + 0.55) / 0.55, ut = (-h + 0.4 - z) / 0.4;
+    if (uf > 0) w *= 1 - (m.nariz ?? 0.12) * uf * uf;
+    if (ut > 0) w *= 1 - (m.rabo ?? 0.06) * ut * ut;
+    return w;
+  };
+  const baixo = (z) => {
+    let y = m.vao ?? 0.3;
+    for (const zw of [m.eixoF, m.eixoT]) { const d = Math.abs(z - zw); if (d < ra) y = Math.max(y, m.r + Math.sqrt(ra * ra - d * d)); }
+    return y;
+  };
+  const zs = [];
+  for (let i = 0; i <= 48; i++) zs.push(-h + m.L * i / 48);
+  zs.push(...m.cima.map((p) => p[0]), vid.rb, vid.rr, vid.rf, vid.wb, vid.l0, vid.l1, vid.b - 0.07, vid.b + 0.07);
+  const lista = zs.filter((z) => z >= -h - 1e-6 && z <= h + 1e-6).sort((a, b) => a - b).filter((z, i, a) => i === 0 || z - a[i - 1] > 0.012);
+  const sec = lista.map((z) => {
+    const yt = interp(m.cima, z), yc = Math.min(interp(m.cintura, z), yt), w = meia(z), yb = Math.min(baixo(z), yc - 0.08);
+    const k = clamp((yt - yc) / 0.3, 0, 1);
+    const lado = [[w * 0.93, yb], [w, yb + 0.3 * (yc - yb)], [w, yc - 0.05], [w * 0.97, yc],
+      [w * (0.92 + (tw - 0.92) * k), yt - 0.06 * k + 0.008 * (1 - k)], [w * (0.65 + (tw * 0.82 - 0.65) * k), yt + 0.015]];
+    return {z, k, anel: [...lado, [0, yt + 0.025], ...lado.slice().reverse().map(([x, y]) => [-x, y])]};
+  });
+  const ehVidro = (j, zm, k) => {
+    if (j === 3 || j === 8) return k > 0.6 && zm > vid.l0 && zm < vid.l1 && Math.abs(zm - vid.b) > 0.07;
+    if (j >= 4 && j <= 7) return (zm > vid.rf && zm < vid.wb) || (zm > vid.rb && zm < vid.rr);
+    return false;
+  };
+  const lata = [], vidro = [], tri = (d, a, b, c) => d.push(...a, ...b, ...c);
+  for (let i = 0; i + 1 < sec.length; i++) {
+    const A = sec[i], B = sec[i + 1], zm = (A.z + B.z) / 2, k = Math.min(A.k, B.k);
+    for (let j = 0; j < 12; j++) {
+      const a = [...A.anel[j], A.z], b = [...A.anel[j + 1], A.z], c = [...B.anel[j + 1], B.z], d = [...B.anel[j], B.z];
+      const dst = ehVidro(j, zm, k) ? vidro : lata;
+      tri(dst, a, b, c); tri(dst, a, c, d);
+    }
+  }
+  for (const [s, frente] of [[sec[0], false], [sec.at(-1), true]]) {
+    const c = [0, (s.anel[0][1] + s.anel[6][1]) / 2, s.z];
+    for (let j = 0; j < 13; j++) {
+      const a = [...s.anel[j], s.z], b = [...s.anel[(j + 1) % 13], s.z];
+      frente ? tri(lata, c, a, b) : tri(lata, c, b, a);
+    }
+  }
+  const geo = (arr) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3)); g.computeVertexNormals(); return g; };
+  const ponto = (z, j, s = 1) => {
+    let i = 0; while (i < sec.length - 2 && sec[i + 1].z < z) i++;
+    const A = sec[i], B = sec[i + 1], u = clamp((z - A.z) / (B.z - A.z), 0, 1);
+    return [s * (A.anel[j][0] + (B.anel[j][0] - A.anel[j][0]) * u), A.anel[j][1] + (B.anel[j][1] - A.anel[j][1]) * u, z];
+  };
+  return {lata: geo(lata), vidro: geo(vidro), ponto};
+}
+function fazCarro(v, def) {
+  const m = CARROS[def.veic.tipo], h = m.L / 2, vao = m.vao ?? 0.3;
+  const lata = M(def.veic.cor, 'lata'), preto = M(PRETO), cr = carroceria(m), P = cr.ponto;
+  const fz = (y) => { for (let z = h; z > 0; z -= 0.01) if (interp(m.cima, z) >= y) return z; return 0; };
+  const tz = (y) => { for (let z = -h; z < 0; z += 0.01) if (interp(m.cima, z) >= y) return z; return 0; };
+  peca(v, cr.lata, lata); peca(v, cr.vidro, M(0x22323f, 'vidro'));
+  caixa(v, m.W * 0.86, 0.34, m.L * 0.9, M(0x141517), 0, vao + 0.12, 0);
+  const rodas = [];
+  for (const s of [1, -1]) {
+    osso(v, P(m.vid.wb, 4, s), P(m.vid.rf, 4, s), 0.035, lata);
+    osso(v, P(m.vid.rb, 4, s), P(m.vid.rr, 4, s), 0.05, lata);
+    const rv = P(m.vid.wb - 0.12, 3, s);
+    caixa(v, 0.1, 0.1, 0.17, lata, rv[0] + s * 0.09, rv[1] + 0.07, rv[2]);
+    const pb = P(m.vid.b, 2, s), yc = P(m.vid.b, 3, s)[1], yb = P(m.vid.b, 0, s)[1];
+    caixa(v, 0.012, yc - yb - 0.12, 0.014, preto, pb[0] + s * 0.004, (yc + yb) / 2, m.vid.b);
+    caixa(v, 0.02, 0.03, 0.13, preto, pb[0] + s * 0.01, yc - 0.1, m.vid.b - 0.18);
+  }
+  for (const z of [m.eixoF, m.eixoT]) for (const s of [1, -1]) rodas.push(pneu(v, m.r, 0.22, s * (m.W / 2 - 0.12), m.r, z, 0xb8bcc2, 16));
+  const placa = M(def.cor, 'luz'), pz = m.placaZ ?? 0.03;
+  caixa(v, 0.4, 0.12, 0.03, placa, 0, m.placa[0], fz(m.placa[0]) + pz);
+  caixa(v, 0.4, 0.12, 0.03, placa, 0, m.placa[1], tz(m.placa[1]) - pz);
+  m.det(v, {fz, tz, preto, P, m, W: m.W});
+  if (def.veic.rack) for (const z of [-0.6, 0.0]) {
+    const y = interp(m.cima, z);
+    caixa(v, m.W * 0.8, 0.04, 0.08, preto, 0, y + 0.1, z);
+    for (const s of [-1, 1]) caixa(v, 0.06, 0.1, 0.12, preto, s * m.W * 0.36, y + 0.05, z);
+  }
+  if (def.veic.escada) {
+    const y = Math.max(...m.cima.map((p) => p[1])) + 0.15, alu = M(0xc6cacf, 'lata'), z0 = -1.55, z1 = 0.95;
+    for (const z of [-1.3, -0.4]) {
+      caixa(v, m.W * 0.8, 0.04, 0.07, preto, 0, y - 0.06, z);
+      for (const s of [-1, 1]) caixa(v, 0.05, 0.1, 0.1, preto, s * m.W * 0.36, y - 0.1, z);
+    }
+    for (const s of [-1, 1]) caixa(v, 0.05, 0.07, z1 - z0, alu, s * 0.24, y, (z0 + z1) / 2);
+    for (let z = z0 + 0.12; z < z1; z += 0.3) caixa(v, 0.48, 0.03, 0.035, alu, 0, y, z);
+  }
+  const xp = 0.36, zb = m.banco ?? 0, yv = interp(m.cintura, 0.1 + zb) - 0.02;
+  peca(v, new THREE.TorusGeometry(0.17, 0.025, 4, 12), preto, xp, yv, 0.15 + zb, -0.45, 0, 0);
+  fazPiloto(v, def, {quadril: [xp, vao + 0.14, -0.38 + zb], mao: [0.15, yv, 0.1 + zb], inc: 0.12, escala: 0.78});
+  return {rodas, frente: rodas.slice(0, 2), raio: m.r, chama: [0, 0.4, -h - 0.45], alto: Math.max(...m.cima.map((p) => p[1])) + (def.veic.escada ? 0.24 : def.veic.rack ? 0.17 : 0.05), escala: 0.8};
+}
+function fazMoto(v, def) {
+  const lata = M(def.veic.cor, 'lata'), esc = M(PRETO), metal = M(0x9aa0a8, 'lata');
+  const rf = pneu(v, 0.42, 0.2, 0, 0.42, 0.98, 0x9aa0a8), rt = pneu(v, 0.42, 0.24, 0, 0.42, -0.92, 0x9aa0a8);
+  for (const s of [-1, 1]) {
+    osso(v, [s * 0.13, 0.42, 0.98], [s * 0.13, 1.2, 0.72], 0.045, metal);
+    caixa(v, 0.06, 0.3, 0.5, lata, s * 0.28, 0.88, 0.42, 0, s * 0.15, 0);
+  }
+  caixa(v, 0.3, 0.07, 0.6, lata, 0, 0.92, 1.02, 0.25, 0, 0);
+  caixa(v, 0.46, 0.34, 0.32, lata, 0, 1.18, 0.74, -0.25, 0, 0);
+  caixa(v, 0.24, 0.1, 0.05, M(LUZ, 'luz'), 0, 1.15, 0.91, -0.25, 0, 0);
+  caixa(v, 0.4, 0.32, 0.04, M(0x223040, 'vidro'), 0, 1.47, 0.7, -0.45, 0, 0);
+  osso(v, [-0.42, 1.36, 0.56], [0.42, 1.36, 0.56], 0.03, esc);
+  caixa(v, 0.52, 0.34, 0.6, lata, 0, 1.02, 0.3);
+  caixa(v, 0.36, 0.4, 0.6, esc, 0, 0.62, 0.05);
+  caixa(v, 0.36, 0.12, 0.7, esc, 0, 1.06, -0.38);
+  caixa(v, 0.3, 0.16, 0.5, lata, 0, 1.06, -0.86, 0.12, 0, 0);
+  caixa(v, 0.2, 0.06, 0.04, M(LANT, 'luz'), 0, 1.03, -1.12);
+  caixa(v, 0.2, 0.13, 0.02, M(def.cor, 'luz'), 0, 0.9, -1.12, 0.4, 0, 0);
+  osso(v, [0.22, 0.5, -0.1], [0.25, 0.82, -0.95], 0.07, metal);
+  osso(v, [0, 0.55, -0.1], [0, 0.42, -0.92], 0.04, esc);
+  if (def.veic.rack) {
+    for (const s of [-1, 1]) {
+      osso(v, [s * 0.22, 1.22, -0.64], [s * 0.22, 1.22, -1.16], 0.022, esc);
+      osso(v, [s * 0.2, 1.22, -0.7], [s * 0.15, 1.08, -0.66], 0.02, esc);
+    }
+    for (const z of [-0.7, -0.92, -1.14]) osso(v, [-0.22, 1.22, z], [0.22, 1.22, z], 0.02, esc);
+  }
+  fazPiloto(v, def, {quadril: [0, 1.14, -0.3], mao: [0.4, 1.36, 0.56], joelho: [0.27, 0.94, 0.12], pe: [0.25, 0.52, -0.08], inc: 0.42, capacete: true});
+  return {rodas: [rf, rt], frente: [rf], raio: 0.42, chama: [0.26, 0.86, -1.38], alto: 2.05, duas: true};
+}
+function fazCogumelo(v, def) {
+  const pe = M(0xf3ead6), lam = M(0xe2d5b8), esc = M(0x18191d), chapeu = M(def.veic.cor, 'lata'), bola = M(0xf7f5ef);
+  const rodas = [];
+  for (const z of [0.6, -0.6]) for (const s of [1, -1]) rodas.push(pneu(v, 0.24, 0.16, s * 0.62, 0.24, z, 0xe2d5b8));
+  caixa(v, 1.1, 0.12, 1.5, esc, 0, 0.3, 0);
+  peca(v, new THREE.CylinderGeometry(0.42, 0.5, 0.55, 10), pe, 0, 0.62, -0.05);
+  peca(v, new THREE.TorusGeometry(0.45, 0.04, 4, 12), lam, 0, 0.74, -0.05, Math.PI / 2, 0, 0);
+  const c = [0, 0.85, -0.05], R = 1.0, ky = 0.55, kz = 1.1;
+  peca(v, new THREE.SphereGeometry(R, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), chapeu, ...c).scale.set(1, ky, kz);
+  peca(v, new THREE.CircleGeometry(R * 0.97, 14), lam, c[0], c[1] - 0.005, c[2], Math.PI / 2, 0, 0).scale.set(1, kz, 1);
+  for (const [t, f, r] of [[0.3, 0.95, 0.15], [1.25, 1.0, 0.13], [2.2, 0.9, 0.16], [2.9, 1.05, 0.12], [3.7, 0.95, 0.15],
+    [4.4, 0.85, 0.13], [5.2, 1.0, 0.14], [1.6, 0.55, 0.12], [3.3, 0.5, 0.13], [4.9, 0.45, 0.11]]) {
+    peca(v, new THREE.IcosahedronGeometry(r * 1.3, 1), bola, c[0] + R * 0.97 * Math.sin(f) * Math.cos(t),
+      c[1] + ky * R * 0.97 * Math.cos(f), c[2] + kz * R * 0.97 * Math.sin(f) * Math.sin(t)).scale.set(1, 0.35, 1);
+  }
+  osso(v, [0, 1.22, 0.62], [0, 1.6, 0.64], 0.035, pe);
+  osso(v, [-0.3, 1.6, 0.64], [0.3, 1.6, 0.64], 0.03, esc);
+  for (const s of [-1, 1]) caixa(v, 0.12, 0.08, 0.04, M(LUZ, 'luz'), s * 0.35, 0.36, 0.76);
+  caixa(v, 0.4, 0.12, 0.03, M(def.cor, 'luz'), 0, 0.4, -0.77);
+  fazPiloto(v, def, {quadril: [0, 1.45, -0.12], mao: [0.28, 1.6, 0.64], joelho: [0.22, 1.55, 0.3], pe: [0.3, 1.36, 0.5], inc: 0.22});
+  return {rodas, frente: rodas.slice(0, 2), raio: 0.24, chama: [0, 0.5, -1.05], alto: 2.45};
+}
+function fazPatinete(v, def) {
+  const qd = M(def.veic.cor, 'lata'), esc = M(0x18191d), metal = M(0xb0b5bb, 'lata');
+  const rf = pneu(v, 0.2, 0.08, 0, 0.2, 0.55, 0x9aa0a8), rt = pneu(v, 0.2, 0.08, 0, 0.2, -0.5, 0x9aa0a8);
+  caixa(v, 0.22, 0.07, 0.9, qd, 0, 0.27, 0.0);
+  caixa(v, 0.18, 0.015, 0.8, M(0x2b2b2b), 0, 0.31, 0.0);
+  osso(v, [0, 0.3, 0.45], [0, 0.2, 0.55], 0.04, qd);
+  osso(v, [0, 0.3, 0.45], [0, 1.3, 0.5], 0.04, qd);
+  osso(v, [-0.3, 1.3, 0.5], [0.3, 1.3, 0.5], 0.028, metal);
+  for (const s of [-1, 1]) osso(v, [s * 0.22, 1.3, 0.5], [s * 0.32, 1.3, 0.5], 0.036, esc);
+  caixa(v, 0.08, 0.05, 0.05, M(LUZ, 'luz'), 0, 1.1, 0.53);
+  osso(v, [0, 0.7, 0.475], [0, 0.95, 0.488], 0.045, M(def.cor, 'luz'), 4);
+  caixa(v, 0.14, 0.03, 0.34, qd, 0, 0.43, -0.5);
+  caixa(v, 0.16, 0.06, 0.02, M(def.cor, 'luz'), 0, 0.38, -0.68);
+  fazPiloto(v, def, {quadril: [0, 1.12, -0.08], mao: [0.28, 1.3, 0.5], joelho: [0.13, 0.72, 0.02], pe: [0.11, 0.33, -0.04], inc: 0.15});
+  return {rodas: [rf, rt], frente: [rf], raio: 0.2, chama: [0, 0.4, -0.9], alto: 2.25, duas: true};
+}
+function fazNave(v, def) {
+  const casco = M(def.veic.cor, 'lata'), esc = M(0x232831), luz = M(def.cor, 'luz');
+  peca(v, new THREE.SphereGeometry(1, 12, 6), casco, 0, 0.72, -0.05).scale.set(0.82, 0.3, 1.3);
+  peca(v, new THREE.ConeGeometry(0.42, 0.9, 8), casco, 0, 0.7, 1.45, Math.PI / 2, 0, 0).scale.set(1, 1, 0.55);
+  peca(v, new THREE.TorusGeometry(1, 0.03, 4, 24), luz, 0, 0.72, -0.05, Math.PI / 2, 0, 0).scale.set(0.83, 1.31, 1);
+  for (const s of [-1, 1]) {
+    peca(v, new THREE.CylinderGeometry(0.22, 0.27, 1.5, 8), casco, s * 0.95, 0.62, -0.3, Math.PI / 2, 0, 0);
+    peca(v, new THREE.ConeGeometry(0.22, 0.38, 8), esc, s * 0.95, 0.62, 0.64, Math.PI / 2, 0, 0);
+    peca(v, new THREE.CylinderGeometry(0.21, 0.21, 0.06, 8), luz, s * 0.95, 0.62, -1.07, Math.PI / 2, 0, 0);
+    caixa(v, 0.55, 0.06, 0.7, casco, s * 0.6, 0.66, -0.35, 0, 0, s * 0.12);
+    caixa(v, 0.14, 0.05, 0.05, M(LUZ, 'luz'), s * 0.3, 0.74, 1.12);
+    for (const z of [0.55, -0.65]) peca(v, new THREE.CylinderGeometry(0.2, 0.25, 0.08, 10), luz, s * 0.5, 0.36, z);
+  }
+  caixa(v, 0.07, 0.42, 0.5, casco, 0, 1.12, -1.0, -0.35, 0, 0);
+  peca(v, new THREE.CylinderGeometry(0.26, 0.3, 0.2, 8), esc, 0, 0.72, -1.32, Math.PI / 2, 0, 0);
+  peca(v, new THREE.CircleGeometry(0.22, 8), luz, 0, 0.72, -1.43, 0, Math.PI, 0);
+  caixa(v, 0.5, 0.1, 0.55, esc, 0, 1.03, -0.2);
+  caixa(v, 0.5, 0.5, 0.1, esc, 0, 1.28, -0.5, -0.25, 0, 0);
+  caixa(v, 0.72, 0.36, 0.03, M(0x9fe8ff, 'vidro'), 0, 1.16, 0.62, -0.75, 0, 0);
+  osso(v, [0, 0.98, 0.45], [0, 1.17, 0.4], 0.035, esc);
+  osso(v, [-0.28, 1.17, 0.4], [0.28, 1.17, 0.4], 0.03, esc);
+  fazPiloto(v, def, {quadril: [0, 1.12, -0.2], mao: [0.27, 1.17, 0.4], joelho: [0.2, 1.24, 0.18], pe: [0.22, 1.04, 0.42], inc: 0.18});
+  return {rodas: [], frente: [], raio: 0.3, chama: [0, 0.72, -1.85], alto: 2.35, voa: true};
+}
+function fazCarrinho(v, def) {
+  const k = 1.6, d = new THREE.Group(); d.scale.setScalar(k); v.add(d);
+  const arame = M(0xc9ccd0, 'lata'), esc = M(PRETO), rodas = [];
+  for (const z of [0.33, -0.33]) for (const s of [1, -1]) {
+    const x = s * (z > 0 ? 0.19 : 0.22);
+    rodas.push(pneu(d, 0.07, 0.04, x, 0.07, z, 0x8a8f96, 10));
+    caixa(d, 0.06, 0.06, 0.06, esc, x, 0.15, z);
+  }
+  for (const s of [-1, 1]) osso(d, [s * 0.2, 0.18, 0.36], [s * 0.22, 0.18, -0.38], 0.014, arame);
+  for (let z = -0.3; z <= 0.31; z += 0.1) osso(d, [-0.2, 0.2, z], [0.2, 0.2, z], 0.006, arame);
+  const cx = (z, y) => (0.21 + (0.4 - z) * 0.05) + (y - 0.45) * 0.06;
+  const zf = 0.4, zt = -0.45;
+  for (const y of [0.45, 0.62, 0.78, 0.95]) {
+    const g = y === 0.45 || y === 0.95 ? 0.012 : 0.006;
+    for (const s of [-1, 1]) osso(d, [s * cx(zf, y), y, zf], [s * cx(zt, y), y, zt], g, arame);
+    osso(d, [-cx(zf, y), y, zf], [cx(zf, y), y, zf], g, arame);
+    osso(d, [-cx(zt, y), y, zt - (y - 0.45) * 0.12], [cx(zt, y), y, zt - (y - 0.45) * 0.12], g, arame);
+  }
+  for (let z = zt + 0.07; z < zf; z += 0.07) for (const s of [-1, 1]) osso(d, [s * cx(z, 0.45), 0.45, z], [s * cx(z, 0.95), 0.95, z], 0.005, arame);
+  for (let x = -0.18; x <= 0.19; x += 0.06) {
+    osso(d, [x, 0.45, zf], [x * 1.04, 0.95, zf], 0.005, arame);
+    osso(d, [x, 0.45, zt], [x * 1.1, 0.95, zt - 0.06], 0.005, arame);
+    osso(d, [x, 0.45, zt], [x, 0.45, zf], 0.005, arame);
+  }
+  for (const s of [-1, 1]) {
+    osso(d, [s * 0.22, 0.18, -0.38], [s * 0.25, 0.45, -0.45], 0.012, arame);
+    osso(d, [s * 0.25, 0.95, -0.51], [s * 0.26, 1.05, -0.56], 0.012, arame);
+  }
+  peca(d, new THREE.CylinderGeometry(0.022, 0.022, 0.56, 8), M(def.cor), 0, 1.05, -0.56, 0, 0, Math.PI / 2);
+  caixa(d, 0.22, 0.07, 0.01, M(def.cor, 'luz'), 0, 0.3, -0.46);
+  fazPiloto(v, def, {quadril: [0, 0.82, -0.32], mao: [0.38, 1.5, 0.02], joelho: [0.18, 1.55, 0.52], pe: [0.2, 1.3, 0.86], inc: -0.08});
+  return {rodas, frente: rodas.slice(0, 2), raio: 0.07 * k, chama: [0, 0.4, -0.95], alto: 2.05};
+}
+function fazFoguete(v, def) {
+  const lata = M(def.veic.cor, 'lata'), esc = M(PRETO), cromo = M(0xd7dbe0, 'lata'), branco = M(0xf2f2f2), y0 = 0.62, rx = Math.PI / 2;
+  peca(v, new THREE.CylinderGeometry(0.46, 0.5, 1.8, 12), lata, 0, y0, -0.1, rx, 0, 0);
+  peca(v, new THREE.ConeGeometry(0.46, 1.1, 12), lata, 0, y0, 1.35, rx, 0, 0);
+  peca(v, new THREE.CylinderGeometry(0.5, 0.62, 0.45, 12), lata, 0, y0, -1.225, rx, 0, 0);
+  peca(v, new THREE.CylinderGeometry(0.6, 0.6, 0.04, 12), esc, 0, y0, -1.46, rx, 0, 0);
+  for (const [x, y] of [[0, 0], [0.3, 0.12], [-0.3, 0.12], [0.2, -0.24], [-0.2, -0.24]]) {
+    peca(v, new THREE.CylinderGeometry(0.07, 0.09, 0.42, 8), cromo, x, y0 + y, -1.66, rx, 0, 0);
+    peca(v, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 8), M(LANT, 'luz'), x, y0 + y, -1.875, rx, 0, 0);
+  }
+  for (const s of [-1, 1]) {
+    caixa(v, 0.02, 0.1, 1.7, branco, s * 0.49, y0, -0.1);
+    caixa(v, 0.5, 0.04, 0.36, lata, s * 0.62, y0 - 0.1, -1.12, 0, 0, s * -0.2);
+    caixa(v, 0.12, 0.07, 0.05, M(LUZ, 'luz'), s * 0.26, y0 + 0.06, 1.24, 0, s * 0.35, 0);
+    osso(v, [s * 0.4, 0.27, 1.0], [s * 0.48, 0.27, 1.0], 0.04, esc); osso(v, [s * 0.44, 0.34, -0.85], [s * 0.53, 0.34, -0.85], 0.05, esc);
+    caixa(v, 0.24, 0.04, 0.6, lata, s * 0.58, 0.56, 1.0);
+  }
+  caixa(v, 0.04, 0.5, 0.55, lata, 0, 1.28, -1.1, 0.55, 0, 0);
+  peca(v, new THREE.SphereGeometry(0.4, 10, 7), esc, 0, y0 + 0.4, -0.3).scale.set(0.95, 0.3, 1.45);
+  caixa(v, 0.62, 0.2, 0.03, M(0x223040, 'vidro'), 0, 1.12, 0.32, -0.55, 0, 0);
+  peca(v, new THREE.TorusGeometry(0.15, 0.022, 4, 12), esc, 0, 1.0, 0.12, -0.6, 0, 0);
+  caixa(v, 0.3, 0.1, 0.02, M(def.cor, 'luz'), 0, 0.2, -1.47);
+  const rodas = [];
+  for (const [z, r, x] of [[1.0, 0.27, 0.6], [-0.85, 0.34, 0.66]]) for (const s of [1, -1]) rodas.push(pneu(v, r, 0.22, s * x, r, z, 0xb8bcc2, 14));
+  fazPiloto(v, def, {quadril: [0, 0.74, -0.42], mao: [0.14, 1.0, 0.08], inc: 0.15, escala: 0.85});
+  return {rodas, frente: rodas.slice(0, 2), raio: 0.34, chama: [0, y0, -2.0], alto: 1.95, escala: 0.85};
+}
+function texBandeira() {
+  return tex(256, 160, (g, w, h) => {
+    g.fillStyle = '#74acdf'; g.fillRect(0, 0, w, h); g.fillStyle = '#ffffff'; g.fillRect(0, h / 3, w, h / 3);
+    g.fillStyle = '#f6b40e'; g.strokeStyle = '#85340a'; g.lineWidth = 1.5;
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r1 = 13, r2 = i % 2 ? 22 : 25;
+      g.beginPath(); g.moveTo(w / 2 + Math.cos(a - 0.12) * r1, h / 2 + Math.sin(a - 0.12) * r1); g.lineTo(w / 2 + Math.cos(a) * r2, h / 2 + Math.sin(a) * r2);
+      g.lineTo(w / 2 + Math.cos(a + 0.12) * r1, h / 2 + Math.sin(a + 0.12) * r1); g.closePath(); g.fill(); }
+    g.beginPath(); g.arc(w / 2, h / 2, 12, 0, 7); g.fill(); g.stroke();
+  });
+}
+function fazSidecar(v, def) {
+  const mot = def.veic.motorista || {}, lata = M(def.veic.cor, 'lata'), esc = M(PRETO), metal = M(0x9aa0a8, 'lata'), verde = M(def.veic.detalhe ?? 0x5fc12a, 'lata');
+  const mo = new THREE.Group(); mo.position.x = 0.4; v.add(mo);
+  const r = fazMoto(mo, {...def, cor: mot.cor ?? def.cor, tracos: mot.tracos || {}});
+  for (const s of [-1, 1]) {
+    caixa(mo, 0.012, 0.07, 0.5, verde, s * 0.265, 1.08, 0.3);
+    caixa(mo, 0.012, 0.06, 0.26, verde, s * 0.235, 1.2, 0.74, -0.25, 0, 0);
+  }
+  for (const s of [-1, 1]) caixa(mo, 0.09, 0.07, 0.05, M(LUZ, 'luz'), s * 0.065, 1.15, 0.915, -0.25, 0, 0);
+  const xs = -0.42;
+  for (const z of [0.55, -0.5]) osso(v, [0.32, 0.46, z], [xs + 0.2, 0.44, z], 0.035, metal);
+  const roda = pneu(v, 0.3, 0.16, xs - 0.38, 0.3, -0.08, 0x9aa0a8);
+  caixa(v, 0.2, 0.035, 0.72, lata, xs - 0.38, 0.65, -0.08); osso(v, [xs - 0.31, 0.44, -0.08], [xs - 0.08, 0.44, -0.08], 0.03, metal);
+  caixa(v, 0.62, 0.4, 1.3, lata, xs, 0.62, -0.02);
+  peca(v, new THREE.SphereGeometry(0.31, 10, 7), lata, xs, 0.62, 0.63).scale.set(1, 0.65, 1.65);
+  peca(v, new THREE.SphereGeometry(0.31, 10, 7), lata, xs, 0.62, -0.67).scale.set(1, 0.65, 0.75);
+  for (const s of [-1, 1]) caixa(v, 0.012, 0.05, 1.3, verde, xs + s * 0.312, 0.7, -0.02);
+  caixa(v, 0.5, 0.025, 0.72, esc, xs, 0.83, -0.16);
+  caixa(v, 0.5, 0.2, 0.025, M(0x223040, 'vidro'), xs, 0.95, 0.3, -0.35, 0, 0);
+  osso(v, [xs - 0.2, 0.9, 0.22], [xs + 0.2, 0.9, 0.22], 0.018, esc);
+  caixa(v, 0.12, 0.06, 0.03, M(LUZ, 'luz'), xs, 0.64, 1.13);
+  caixa(v, 0.16, 0.08, 0.02, M(def.cor, 'luz'), xs, 0.62, -0.88);
+  if (def.veic.bandeira) {
+    osso(v, [0.55, 1.08, -1.0], [0.55, 2.45, -1.06], 0.012, esc);
+    const b = peca(v, new THREE.PlaneGeometry(0.56, 0.35), new THREE.MeshStandardMaterial({map: texBandeira(), side: THREE.DoubleSide, roughness: 0.8}),
+      0.55 + 0.22, 2.24, -1.06 - 0.17, 0, 0.67, 0);
+    b.userData.solto = true;
+  }
+  if (!def.veic.vazio) fazPiloto(v, def, {quadril: [xs, 0.58, -0.2], mao: [0.2, 0.92, 0.22], inc: 0.12, capacete: true});
+  return {rodas: [...r.rodas, roda], frente: r.frente, raio: r.raio, chama: [0.66, 0.86, -1.38], alto: 2.45};
+}
+function texDuo(lado) {
+  return tex(lado ? 1024 : 512, 448, (g, w, h) => {
+    const f = g.createLinearGradient(0, 0, 0, h); f.addColorStop(0, '#2d2729'); f.addColorStop(1, '#1d191b');
+    g.fillStyle = f; g.fillRect(0, 0, w, h);
+    const ouro = g.createLinearGradient(0, 0, w, 0); ouro.addColorStop(0, '#f0c27a'); ouro.addColorStop(0.5, '#a8692e'); ouro.addColorStop(1, '#e8b468');
+    for (const [y0, a, esp] of [[70, 40, 26], [100, -30, 10], [h - 90, -45, 30], [h - 60, 35, 12]]) {
+      g.fillStyle = ouro; g.globalAlpha = esp > 20 ? 0.85 : 0.5; g.beginPath(); g.moveTo(0, y0);
+      g.bezierCurveTo(w * 0.3, y0 - a, w * 0.6, y0 + a, w, y0 - a * 0.5); g.lineTo(w, y0 - a * 0.5 + esp);
+      g.bezierCurveTo(w * 0.6, y0 + a + esp, w * 0.3, y0 - a + esp, 0, y0 + esp); g.closePath(); g.fill();
+    }
+    g.globalAlpha = 1; g.fillStyle = '#f3efe8'; g.textBaseline = 'middle';
+    if (!lado) { g.textAlign = 'center'; g.font = 'italic 800 104px system-ui, sans-serif'; g.fillText('myTapp', w / 2, h / 2); return; }
+    g.textAlign = 'left'; g.font = 'italic 800 128px system-ui, sans-serif'; g.fillText('myTapp', 60, h / 2 + 6);
+    g.textAlign = 'center'; g.font = '700 50px system-ui, sans-serif'; g.fillText('PEGUE AQUI SEU', 760, h / 2 - 50);
+    g.font = '900 122px system-ui, sans-serif'; g.fillText('CHOPE', 760, h / 2 + 40);
+  });
+}
+function fazDuo(v, def) {
+  const esc = M(0x18191d), corpo = M(def.veic.cor), inox = M(0xc9ccd0, 'lata'), grade = M(0x2b2d31), ouro = M(0xd39a4f, 'lata');
+  const d = new THREE.Group(), k = 1.22, rodas = [];
+  d.scale.setScalar(k); v.add(d);
+  for (const z of [0.5, -0.5]) for (const s of [1, -1]) {
+    rodas.push(pneu(d, 0.13, 0.08, s * 0.25, 0.13, z, 0x9aa0a8));
+    caixa(d, 0.03, 0.12, 0.05, inox, s * 0.25 + s * 0.05, 0.2, z); caixa(d, 0.12, 0.03, 0.1, inox, s * 0.25, 0.27, z);
+  }
+  caixa(d, 0.64, 0.12, 1.28, M(0x111214), 0, 0.34, 0);
+  caixa(d, 0.62, 0.56, 1.26, corpo, 0, 0.67, 0);
+  for (const s of [-1, 1]) for (const z of [-0.63, 0.63]) caixa(d, 0.03, 0.68, 0.03, esc, s * 0.31, 0.61, z);
+  const lado = new THREE.MeshStandardMaterial({map: texDuo(true), roughness: 0.6}), ponta = new THREE.MeshStandardMaterial({map: texDuo(false), roughness: 0.6});
+  for (const s of [-1, 1]) {
+    const pl = peca(d, new THREE.PlaneGeometry(1.2, 0.52), lado, s * 0.312, 0.67, 0, 0, s * Math.PI / 2, 0); pl.userData.solto = true;
+    const pt = peca(d, new THREE.PlaneGeometry(0.58, 0.52), ponta, 0, 0.67, s * 0.632, 0, s > 0 ? 0 : Math.PI, 0); pt.userData.solto = true;
+  }
+  caixa(d, 0.7, 0.04, 1.36, inox, 0, 0.97, 0);
+  for (const z of [0.38, -0.38]) {
+    caixa(d, 0.34, 0.035, 0.34, inox, 0, 1.005, z); caixa(d, 0.3, 0.008, 0.3, grade, 0, 1.025, z);
+    peca(d, new THREE.CylinderGeometry(0.045, 0.05, 0.32, 10), inox, 0, 1.18, z);
+    caixa(d, 0.14, 0.17, 0.12, inox, 0, 1.42, z);
+    caixa(d, 0.1, 0.17, 0.02, ouro, 0.02, 1.42, z + 0.07);
+    caixa(d, 0.01, 0.07, 0.06, M(0x0d1117), 0.072, 1.45, z);
+    caixa(d, 0.012, 0.035, 0.022, M(0xf0a830, 'luz'), 0.076, 1.45, z);
+    peca(d, new THREE.CylinderGeometry(0.013, 0.013, 0.012, 8), M(0xf3f3f3), 0.074, 1.37, z, 0, 0, Math.PI / 2);
+    osso(d, [0.05, 1.33, z], [0.06, 1.27, z], 0.012, inox);
+  }
+  for (const z of [0.6, -0.6]) {
+    caixa(d, 0.12, 0.62, 0.12, M(0x24262a), -0.22, 1.3, z);
+    caixa(d, 0.01, 0.2, 0.08, esc, -0.155, 1.18, z);
+    peca(d, new THREE.CylinderGeometry(0.025, 0.02, 0.06, 8), M(0xf3f3f3), -0.15, 1.2, z);
+  }
+  caixa(d, 0.36, 0.08, 0.02, M(def.cor, 'luz'), 0, 0.32, -0.652);
+  for (const s of [-1, 1]) caixa(d, 0.1, 0.05, 0.02, M(LUZ, 'luz'), s * 0.2, 0.32, 0.652);
+  fazPiloto(v, def, {quadril: [0, 1.32, -0.05], mao: [0.12, 1.73, 0.37], joelho: [0.24, 1.46, 0.2], pe: [0.29, 1.26, 0.29], inc: 0.2});
+  return {rodas, frente: rodas.slice(0, 2), raio: 0.13 * k, chama: [0, 0.5, -0.95], alto: 2.5};
+}
+function funde(v) {
+  v.updateMatrixWorld(true);
+  const inv = v.matrixWorld.clone().invert(), grupos = new Map(), velhas = [];
+  const visita = (o) => {
+    for (const f of [...o.children]) {
+      if (f.userData.solto) continue;
+      if (f.isMesh) {
+        const geo = f.geometry.index ? f.geometry.toNonIndexed() : f.geometry.clone();
+        geo.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, f.matrixWorld));
+        for (const k of Object.keys(geo.attributes)) if (k !== 'position' && k !== 'normal') geo.deleteAttribute(k);
+        if (!grupos.has(f.material)) grupos.set(f.material, []);
+        grupos.get(f.material).push(geo); velhas.push(f);
+      }
+      visita(f);
+    }
+  };
+  visita(v);
+  for (const f of velhas) f.removeFromParent();
+  for (const [mat, geos] of grupos) { const m = new THREE.Mesh(mergeGeometries(geos), mat); m.castShadow = !mat.transparent; v.add(m); }
+}
+function fazKart(def) {
+  const g = new THREE.Group(), corpo = new THREE.Group(), v = new THREE.Group();
+  g.add(corpo); corpo.add(v);
+  const tipo = def.veic.tipo, r = tipo === 'moto' ? fazMoto(v, def) : tipo === 'cogumelo' ? fazCogumelo(v, def) : tipo === 'patinete' ? fazPatinete(v, def) : tipo === 'nave' ? fazNave(v, def) : tipo === 'duo' ? fazDuo(v, def) : tipo === 'sidecar' ? fazSidecar(v, def) : tipo === 'carrinho' ? fazCarrinho(v, def) : tipo === 'foguete' ? fazFoguete(v, def) : fazCarro(v, def);
+  const S = r.escala ?? 0.92; v.scale.setScalar(S);
+  const chama = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.9, 10),
+    new THREE.MeshBasicMaterial({color: def.veic.chama ?? (def.veic.eletrico ? 0x48c6ff : 0xff9a1f), transparent: true, opacity: 0.9}));
+  chama.rotation.x = -Math.PI / 2; chama.position.set(...r.chama); chama.visible = false; chama.userData.solto = true; v.add(chama);
+  funde(v);
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({map: texNome(def.nome, def.cor), depthWrite: false}));
+  tag.scale.set(2.6, 0.65, 1); tag.position.y = r.alto * S + 0.6; g.add(tag);
+  cena.add(g);
+  return {g, corpo, rodas: r.rodas, frente: r.frente, raio: r.raio * S, duas: !!r.duas, voa: !!r.voa, chama, tag};
+}
+montaPista(PISTAS[pistaAtual]);
+const zeraKart = () => ({efeito: '', tEfeito: 0, tImune: 0, escudo: false, torneira: 0, lento: 0, esp: '', tEsp: 0, espAlvo: -1, copos: 0, tCheio: 0,
+  item: '', roleta: 0, itemVem: '', tItem: 0});
+const NA_PISTA = 12, feitos = [];
+function kartDe(i) {
+  if (!feitos[i]) { const def = PILOTOS[i]; feitos[i] = {
+    ...def, i, ia: true, base: def.fator || 1, fator: def.fator || 1, ...fazKart(def),
+    pos: new THREE.Vector3(), vel: new THREE.Vector3(), ang: 0, v: 0, idx: 0, lat: 0,
+    volta: 0, metade: true, drift: 0, carga: 0, turbo: 0, pulo: 0, desliza: 0, giroVis: 0, inclina: 0,
+    faixa: 0, faixaAlvo: 0, faixaT: 0, terminou: false, chegada: 0, tempo: 0, ...zeraKart(),
+  }; }
+  return feitos[i];
+}
+const CHAVE_PIL = 'mytapp-kart-2027-piloto';
+let sel = (() => { try { return Math.max(0, PILOTOS.findIndex((p) => p.nome === localStorage.getItem(CHAVE_PIL))); } catch { return 0; } })();
+let jog = kartDe(sel), karts = [jog];
+const embaralha = (l) => { for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; } return l; };
+function sorteia() {
+  const outros = PILOTOS.map((p, i) => i).filter((i) => i !== sel);
+  const vem = [...embaralha(outros.filter((i) => PILOTOS[i].ok)), ...embaralha(outros.filter((i) => !PILOTOS[i].ok))].slice(0, NA_PISTA - 1);
+  for (const k of karts) k.g.visible = false;
+  karts = [jog, ...vem.sort((a, b) => a - b).map(kartDe)];
+  for (const k of karts) { k.g.visible = true; k.ia = k !== jog; k.tag.visible = k !== jog; }
+}
+function localiza(k, total = false) {
+  let melhor = k.idx, md = 1e12;
+  const de = total ? 0 : -40, ate = total ? N : 41;
+  for (let o = de; o < ate; o++) {
+    const j = ((k.idx + o) % N + N) % N, dx = k.pos.x - P[j].x, dz = k.pos.z - P[j].z, d = dx * dx + dz * dz;
+    if (d < md) { md = d; melhor = j; }
+  }
+  if (!total && md > 35 * 35) return localiza(k, true);
+  const ant = k.idx; k.idx = melhor;
+  k.lat = (k.pos.x - P[melhor].x) * NR[melhor].x + (k.pos.z - P[melhor].z) * NR[melhor].z;
+  if (melhor > N * 0.45 && melhor < N * 0.55) k.metade = true;
+  if (ant > N * 0.85 && melhor < N * 0.15) {
+    if (k.metade) { k.volta++; k.metade = false; cruzouLinha(k); }
+  } else if (ant < N * 0.15 && melhor > N * 0.85 && !k.metade) {
+    k.volta = Math.max(0, k.volta - 1); k.metade = true;
+  }
+}
+function passo(k, e, dt) {
+  const E = ESPECIAIS[k.esp];
+  const naGrama = Math.abs(k.lat) > LARG / 2 + 0.8 && !E?.trilha && !E?.voa;
+  let vmax = (naGrama ? VGRAMA : VMAX) * k.fator;
+  if (k.turbo > 0) { vmax = VTURBO; k.turbo -= dt; }
+  if (k.torneira > 0) vmax = Math.max(vmax, VTURBO * 1.08);
+  if (E?.vmax) vmax = Math.max(vmax, E.vmax);
+  if (k.efeito === 'glitter') vmax *= 0.6;
+  if (k.lento > 0) vmax *= 0.55;
+  if (k.efeito === 'congela') k.v *= Math.exp(-7 * dt);
+  else if (k.efeito === 'roda') k.v *= Math.exp(-1.5 * dt);
+  const forte = k.turbo > 0 || k.torneira > 0 || (E?.vmax || 0) > VMAX;
+  if (e.acel) k.v += (forte ? ACEL * 2.2 : ACEL) * dt;
+  else if (e.freio) k.v -= (k.v > 0 ? FREIO : ACEL * 0.6) * dt;
+  else k.v -= Math.sign(k.v) * Math.min(Math.abs(k.v), ATRITO * dt);
+  if (k.v > vmax) k.v = Math.max(vmax, k.v - 24 * dt);
+  if (k.v < -VRE) k.v = -VRE;
+  if (e.drift && !k.drift && e.giro !== 0 && k.v > 12 && !naGrama && !k.efeito) { k.drift = Math.sign(e.giro); k.carga = 0; k.pulo = 0.25; }
+  if (k.drift && (!e.drift || k.v < 8)) {
+    if (k.v >= 8) { if (k.carga > 2.2) k.turbo = 1.3; else if (k.carga > 1) k.turbo = 0.7; }
+    k.drift = 0; k.carga = 0;
+  }
+  const fv = Math.min(1, Math.abs(k.v) / 7) * (k.v < 0 ? -1 : 1);
+  let taxa;
+  if (k.drift) {
+    taxa = k.drift * (1.05 + 0.75 * e.giro * k.drift);
+    k.carga += dt * (e.giro * k.drift > 0 ? 1.4 : 0.8);
+  } else taxa = e.giro * 2.0 * (1 - 0.3 * Math.min(1, Math.abs(k.v) / VMAX));
+  k.ang += taxa * fv * dt;
+  k.giroVis = e.giro;
+  const fx = Math.sin(k.ang), fz = Math.cos(k.ang);
+  const a = 1 - Math.exp(-(k.efeito === 'derrapa' ? 1.4 : k.efeito === 'roda' ? 2 : k.drift ? 2.6 : naGrama ? 5 : 9) * dt);
+  k.vel.x += (fx * k.v - k.vel.x) * a; k.vel.z += (fz * k.v - k.vel.z) * a;
+  k.pos.x += k.vel.x * dt; k.pos.z += k.vel.z * dt;
+  localiza(k);
+  if (Math.abs(k.lat) > MURO - 1) {
+    const l = NR[k.idx], exc = k.lat - Math.sign(k.lat) * (MURO - 1);
+    k.pos.x -= l.x * exc; k.pos.z -= l.z * exc;
+    const vl = k.vel.x * l.x + k.vel.z * l.z;
+    if (vl * k.lat > 0) { k.vel.x -= l.x * vl * 1.5; k.vel.z -= l.z * vl * 1.5; }
+    k.v *= 1 - Math.min(0.9, 3 * dt); k.lat = Math.sign(k.lat) * (MURO - 1);
+  }
+}
+function colisoes() {
+  for (let i = 0; i < karts.length; i++) for (let j = i + 1; j < karts.length; j++) {
+    const a = karts[i], b = karts[j], dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z, d2 = dx * dx + dz * dz;
+    if (d2 > 2.3 * 2.3 || d2 < 1e-6 || fantasma(a) || fantasma(b)) continue;
+    const d = Math.sqrt(d2), nx = dx / d, nz = dz / d, emp = (2.3 - d) / 2;
+    const ra = ariete(a), rb = ariete(b);
+    if (ra && !rb) bate(a, b, nx, nz); else if (rb && !ra) bate(b, a, -nx, -nz);
+    a.pos.x -= nx * emp; a.pos.z -= nz * emp; b.pos.x += nx * emp; b.pos.z += nz * emp;
+    const va = a.vel.x * nx + a.vel.z * nz, vb = b.vel.x * nx + b.vel.z * nz;
+    if (va > vb) {
+      const imp = (va - vb) * 0.6;
+      a.vel.x -= nx * imp; a.vel.z -= nz * imp; b.vel.x += nx * imp; b.vel.z += nz * imp;
+      a.v *= 0.96; b.v *= 0.96;
+    }
+  }
+}
+function bate(f, v, nx, nz) {
+  if (!golpe(v, 'roda', 1.1, f)) return;
+  const forca = f.esp === 'empurra' ? 22 : 12;
+  v.vel.x += nx * forca; v.vel.z += nz * forca;
+  if (f.esp === 'empurra') {
+    const l = NR[v.idx], s = v.lat >= f.lat ? 1 : -1; v.vel.x += l.x * s * 16; v.vel.z += l.z * s * 16; f.tEsp = Math.min(f.tEsp, 0.3);
+  }
+  estoura((f.pos.x + v.pos.x) / 2, 0.8, (f.pos.z + v.pos.z) / 2, [0xfff2b0, 0xffb000, 0xffffff], 24, 8);
+}
+function pilotoIA(k, dt) {
+  k.faixaT -= dt;
+  const quer = alvoIA(k);
+  if (quer !== null) { k.faixaAlvo = quer; k.faixaT = Math.max(k.faixaT, 0.5); }
+  else if (k.faixaT < 0) { k.faixaAlvo = (Math.random() * 2 - 1) * LARG * 0.3; k.faixaT = 2 + Math.random() * 3; }
+  k.faixa += (k.faixaAlvo - k.faixa) * Math.min(1, dt * (quer !== null ? 2.6 : 0.8));
+  const fr = (k.idx + 14 + Math.floor(Math.max(0, k.v) * 0.6)) % N;
+  const ax = P[fr].x + NR[fr].x * k.faixa, az = P[fr].z + NR[fr].z * k.faixa;
+  const giro = clamp(difAng(Math.atan2(ax - k.pos.x, az - k.pos.z), k.ang) * 2.5, -1, 1);
+  const curv = 1 - T[k.idx].dot(T[(k.idx + 40) % N]);
+  const vAlvo = VMAX * k.fator * (1 - Math.min(0.45, curv * 1.6));
+  if (k.ia) {
+    const dif = progresso(jog) - progresso(k);
+    k.fator = k.base + clamp(dif * 0.35, -0.08, 0.09);
+  }
+  return {acel: k.v < vAlvo, freio: k.v > vAlvo + 4, giro, drift: false};
+}
+const ITENS = {
+  turbo: {ic: '🍺', nome: 'Chope turbo'},
+  barril: {ic: '🛢️', nome: 'Barril rolando'},
+  espuma: {ic: '🫧', nome: 'Espuma'},
+  gelo: {ic: '🧊', nome: 'Gelo da câmara fria'},
+  escudo: {ic: '🛡️', nome: 'Escudo HUG'},
+  torneira: {ic: '🚰', nome: 'Torneira liberada'},
+};
+const LISTA_ITENS = Object.keys(ITENS);
+const SORTE = {turbo: [6, 26, 28], barril: [26, 24, 14], espuma: [34, 14, 4], gelo: [0, 20, 24], escudo: [34, 14, 6], torneira: [0, 2, 24]};
+const FILAS = [0.14, 0.4, 0.63, 0.87], LATS = [-5.4, -1.8, 1.8, 5.4], VOLTA_CAIXA = 4, R_CAIXA = 1.9;
+const GRUPOS_COPO = [0.05, 0.22, 0.31, 0.5, 0.56, 0.73, 0.79, 0.95], ESP_COPOS = 6, VOLTA_COPO = 7, R_COPO = 1.7;
+const PARADO = {acel: false, freio: false, giro: 0, drift: false};
+let caixas = [], copos = [], objs = [], proxId = 1, tMsg = 0;
+const ordem = () => [...karts].sort((a, b) => progresso(b) - progresso(a));
+const kartPorI = (i) => karts.find((k) => k.i === i) || null;
+const idxDe = (s) => ((Math.round(s / COMP * N) % N) + N) % N;
+const noTrilho = (j, lat) => ({x: P[j].x + NR[j].x * lat, z: P[j].z + NR[j].z * lat});
+const naFrente = (s, k) => ((s - DIST[k.idx]) % COMP + COMP * 1.5) % COMP - COMP / 2;
+const atras = (k, m) => (DIST[k.idx] - m + COMP) % COMP, adiante = (k, m) => (DIST[k.idx] + m) % COMP;
+const sTot = (k) => k.volta * COMP + DIST[k.idx];
+const curvaAdiante = (k, n = 60) => 1 - T[k.idx].dot(T[(k.idx + n) % N]);
+function frenteDe(k, max = 60) {
+  let m = null, md = max;
+  for (const o of karts) { if (o === k || o.terminou) continue; const d = sTot(o) - sTot(k); if (d > 0.5 && d < md) { md = d; m = o; } }
+  return m;
+}
+function atrasDe(k, max = 30) {
+  let m = null, md = max;
+  for (const o of karts) { if (o === k || o.terminou) continue; const d = sTot(k) - sTot(o); if (d > 0.5 && d < md) { md = d; m = o; } }
+  return m;
+}
+function naMiraFrente(k, max, larg) {
+  for (const o of karts) { if (o === k || o.terminou) continue; const d = sTot(o) - sTot(k); if (d > 1 && d < max && Math.abs(o.lat - k.lat) < larg) return o; }
+  return null;
+}
+const pertoDe = (k, r) => karts.filter((o) => o !== k && (o.pos.x - k.pos.x) ** 2 + (o.pos.z - k.pos.z) ** 2 < r * r);
+const fantasma = (k) => k.esp === 'orbital' || k.esp === 'bolso';
+const ariete = (k) => k.torneira > 0 || !!ESPECIAIS[k.esp]?.ram;
+const blindado = (k) => k.torneira > 0 || !!ESPECIAIS[k.esp]?.blinda;
+function recado(txt, dur = 1.6) { $('hud-msg').textContent = txt; tMsg = dur; }
+function sorteiaItem(k) {
+  const o = ordem(), f = o.length > 1 ? o.indexOf(k) / (o.length - 1) : 0;
+  let tot = 0;
+  const pesos = LISTA_ITENS.map((id) => { const p = SORTE[id], w = f < 0.5 ? p[0] + (p[1] - p[0]) * f * 2 : p[1] + (p[2] - p[1]) * (f - 0.5) * 2; tot += w; return w; });
+  let r = Math.random() * tot;
+  for (let n = 0; n < pesos.length; n++) if ((r -= pesos[n]) <= 0) return LISTA_ITENS[n];
+  return 'turbo';
+}
+function golpe(k, tipo, dur, de = null) {
+  if (k.tImune > 0 || blindado(k)) return false;
+  if (k.escudo) {
+    k.escudo = false; k.tImune = 0.7; estoura(k.pos.x, 1.2, k.pos.z, [0x7fe8ff, 0xffffff], 30, 7);
+    if (k === jog) recado('O Escudo HUG segurou!', 1.3);
+    return false;
+  }
+  k.efeito = tipo; k.tEfeito = dur; k.tImune = dur + 0.8;
+  if (tipo !== 'tonto' && tipo !== 'glitter') { k.drift = 0; k.carga = 0; k.turbo = 0; }
+  if (tipo === 'roda') k.v *= 0.4; else if (tipo === 'congela') k.v *= 0.25;
+  if ((tipo === 'roda' || tipo === 'congela') && k.copos > 0 && !k.esp) k.copos--;
+  if (k === jog) recado({roda: 'Rodou!', congela: 'Congelado!', derrapa: 'Escorregou!', tonto: 'Tonto!', glitter: 'Glitter na cara!'}[tipo] || '', 1.3);
+  else if (de === jog) recado(`Acertou ${k.nome}!`, 1.2);
+  return true;
+}
+const OBJ = {
+  barril: {r: 1.5, vida: 7, anda: 44, golpe: ['roda', 1.1], some: true},
+  carga: {r: 1.4, vida: 6, anda: 47, golpe: ['roda', 1.0], some: true},
+  gelo: {r: 1.6, vida: 4, mira: 62, golpe: ['congela', 1.5], some: true},
+  glitter: {r: 1.7, vida: 4.5, mira: 52, golpe: ['glitter', 2.6], some: true, area: 7},
+  espuma: {r: 2.1, vida: 25, chao: true, golpe: ['derrapa', 0.9], some: true},
+  banqueta: {r: 1.2, vida: 15, chao: true, golpe: ['roda', 1.0], some: true},
+  escada: {r: 4.6, vida: 14, chao: true, larga: true, golpe: ['roda', 0.9], some: true},
+  esporos: {r: 5, vida: 6, nuvem: true, golpe: ['tonto', 2.2]},
+  fumaca: {r: 5.5, vida: 6, nuvem: true},
+};
+function novoObj(tipo, k, o = {}) {
+  const ob = {id: proxId++, tipo, s: DIST[k.idx], lat: k.lat, x: k.pos.x, z: k.pos.z, vx: 0, vz: 0, v: 0, t: 0, dono: k.i, alvo: -1, ...o};
+  if (!OBJ[tipo].mira) Object.assign(ob, noTrilho(idxDe(ob.s), ob.lat));
+  objs.push(ob); return ob;
+}
+function voa(tipo, k, alvo) {
+  const fx = Math.sin(k.ang), fz = Math.cos(k.ang), vel = OBJ[tipo].mira;
+  return novoObj(tipo, k, {x: k.pos.x + fx * 2.5, z: k.pos.z + fz * 2.5, vx: fx * vel, vz: fz * vel, alvo: alvo ? alvo.i : -1});
+}
+function objetos(dt) {
+  for (const o of objs) {
+    const D = OBJ[o.tipo];
+    o.t += dt;
+    if (D.anda) { o.s = (o.s + o.v * dt) % COMP; Object.assign(o, noTrilho(idxDe(o.s), o.lat)); }
+    else if (D.mira) {
+      const a = kartPorI(o.alvo);
+      if (a && !a.terminou) {
+        const dx = a.pos.x - o.x, dz = a.pos.z - o.z, d = Math.hypot(dx, dz) || 1, f = 1 - Math.exp(-7 * dt);
+        o.vx += (dx / d * D.mira - o.vx) * f; o.vz += (dz / d * D.mira - o.vz) * f;
+      }
+      o.x += o.vx * dt; o.z += o.vz * dt;
+    }
+    if (o.t > D.vida) { o.fim = true; continue; }
+    for (const k of karts) {
+      if (k.i === o.dono && (o.t < 0.5 || D.nuvem)) continue;
+      if (fantasma(k) || (D.chao && k.esp === 'trilha')) continue;
+      const toca = D.larga ? Math.abs(naFrente(o.s, k)) < 1.2 && Math.abs(k.lat - o.lat) < D.r
+        : (k.pos.x - o.x) ** 2 + (k.pos.z - o.z) ** 2 < (D.r + 0.7) ** 2;
+      if (!toca) continue;
+      const dono = kartPorI(o.dono);
+      if (o.tipo === 'fumaca') { if (!blindado(k)) k.lento = Math.max(k.lento, 0.5); continue; }
+      if (D.nuvem) { if (k.efeito !== 'tonto') golpe(k, ...D.golpe, dono); continue; }
+      if (D.area) {
+        for (const v of karts) if (v.i !== o.dono && (v.pos.x - o.x) ** 2 + (v.pos.z - o.z) ** 2 < D.area * D.area) golpe(v, ...D.golpe, dono);
+        estoura(o.x, 1.2, o.z, [0xff5fc8, 0xffffff, 0xffd1ef, 0xffe14a], 70, 9);
+      } else golpe(k, ...D.golpe, dono);
+      if (D.some) {
+        o.fim = true;
+        estoura(o.x, 0.8, o.z, o.tipo === 'gelo' ? [0xcff4ff, 0xffffff] : o.tipo === 'espuma' ? [0xfffaf0, 0xffd27a] : [0xc9cdd5, 0x8a6a3a, 0xffffff], 24, 6);
+        break;
+      }
+    }
+  }
+  if (objs.some((o) => o.fim)) objs = objs.filter((o) => !o.fim);
+}
+function espalhaCaixas() {
+  semente = 4049 + pistaAtual * 131;
+  caixas = [];
+  for (const f of FILAS) for (const lat of LATS) { const j = Math.floor(f * N); caixas.push({j, lat, ...noTrilho(j, lat), t: 0}); }
+  copos = [];
+  for (const f of GRUPOS_COPO) {
+    const lat0 = (rnd() * 2 - 1) * 5, inc = (rnd() - 0.5) * 2;
+    for (let n = 0; n < 3; n++) { const j = (Math.floor(f * N) + n * 6) % N, lat = clamp(lat0 + n * inc, -6.5, 6.5); copos.push({j, lat, ...noTrilho(j, lat), t: 0}); }
+  }
+  vCaixa.fill(0); vCopo.fill(0);
+}
+function pegaCaixas(dt) {
+  for (const c of caixas) {
+    if (c.t > 0) { c.t = Math.max(0, c.t - dt); continue; }
+    for (const k of karts) {
+      if (k.esp === 'orbital' || (k.pos.x - c.x) ** 2 + (k.pos.z - c.z) ** 2 > R_CAIXA * R_CAIXA) continue;
+      c.t = VOLTA_CAIXA; estoura(c.x, 1, c.z, [0xff7a00, 0xffd84a, 0xffffff], 18, 6);
+      if (!k.item && !k.roleta) { k.roleta = k === jog ? 1.1 : 0.6; k.itemVem = sorteiaItem(k); }
+      break;
+    }
+  }
+  for (const c of copos) {
+    if (c.t > 0) { c.t = Math.max(0, c.t - dt); continue; }
+    for (const k of karts) {
+      if (k.esp === 'orbital' || (k.pos.x - c.x) ** 2 + (k.pos.z - c.z) ** 2 > R_COPO * R_COPO) continue;
+      c.t = VOLTA_COPO; estoura(c.x, 0.9, c.z, [0xffb000, 0xfff4d6], 8, 4);
+      if (!k.esp && k.copos < ESP_COPOS) {
+        k.copos++;
+        if (k === jog && k.copos === ESP_COPOS) recado(`${(ESPECIAIS[k.especial] || ESPECIAIS.generico).nome} pronto!`, 1.8);
+      }
+      break;
+    }
+  }
+}
+const ESPECIAIS = {
+  rodada: {nome: 'Rodada de chope', dur: 2.5, bom: (k) => !!naMiraFrente(k, 16, 3),
+    tique: (k) => {
+      const fx = Math.sin(k.ang), fz = Math.cos(k.ang);
+      for (const o of karts) {
+        if (o === k) continue;
+        const dx = o.pos.x - k.pos.x, dz = o.pos.z - k.pos.z, f = dx * fx + dz * fz, l = Math.abs(dx * fz - dz * fx);
+        if (f > 0.5 && f < 16 && l < 1.5 + f * 0.22) golpe(o, 'derrapa', 1.0, k);
+      }
+    }},
+  vacuo: {nome: 'Vácuo', dur: 3, vmax: VTURBO * 1.05, mira: true, bom: (k) => !!frenteDe(k, 70),
+    ativa: (k) => { k.espAlvo = frenteDe(k, 90)?.i ?? -1; },
+    tique: (k) => { const a = kartPorI(k.espAlvo); if (a && Math.hypot(a.pos.x - k.pos.x, a.pos.z - k.pos.z) < 4.5) { k.turbo = 1.6; k.tEsp = 0; } }},
+  casco: {nome: 'Casco de besouro', dur: 3.5, vmax: VMAX * 1.12, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 25) || ameacado(k)},
+  estouro: {nome: 'Escapamento estourado', dur: 0.6, bom: (k) => !!atrasDe(k, 12),
+    ativa: (k) => {
+      for (const o of karts) { const d = sTot(k) - sTot(o); if (o !== k && d > -1 && d < 13 && Math.hypot(o.pos.x - k.pos.x, o.pos.z - k.pos.z) < 15) golpe(o, 'roda', 1.0, k); }
+      k.turbo = 1.5;
+      estoura(k.pos.x - Math.sin(k.ang) * 2, 0.6, k.pos.z - Math.cos(k.ang) * 2, [0xff7a00, 0x2b2b2b, 0xffd24a, 0x555555], 50, 10);
+    }},
+  descarga: {nome: 'Descarga elétrica', dur: 0.6, bom: (k) => pertoDe(k, 11).length > 0,
+    ativa: (k) => {
+      for (const o of pertoDe(k, 11)) golpe(o, 'congela', 0.9, k);
+      for (let n = 0; n < 60; n++) { const a = n / 60 * 6.283; solta(k.pos.x, 0.8, k.pos.z, n % 2 ? 0x48c6ff : 0xffffff, Math.cos(a) * 16, 0.5, Math.sin(a) * 16, 0.6, 0); }
+    }},
+  bancos: {nome: 'Banquetas do bar', dur: 0.6, bom: (k) => !!atrasDe(k, 25),
+    ativa: (k) => [-3, 0, 3].forEach((l, n) => novoObj('banqueta', k, {s: atras(k, 4 + n * 4), lat: clamp(k.lat + l, -LARG / 2, LARG / 2)}))},
+  trilha: {nome: 'Modo trilha', dur: 4, vmax: VTURBO * 0.9, trilha: true, bom: () => true},
+  rack: {nome: 'Carga do rack', dur: 0.6, bom: (k) => !!frenteDe(k, 45),
+    ativa: (k) => [-2.5, 0, 2.5].forEach((l, n) => novoObj('carga', k, {s: adiante(k, 3), lat: clamp(k.lat + l, -LARG / 2, LARG / 2), v: Math.max(OBJ.carga.anda, k.v + 12) + n * 2}))},
+  bolso: {nome: 'Kwid de bolso', dur: 4, vmax: VMAX * 1.08, blinda: true, bom: () => true},
+  buzina: {nome: 'Buzinaço', dur: 0.6, bom: (k) => !!frenteDe(k, 22),
+    ativa: (k) => {
+      for (const o of karts) {
+        const d = sTot(o) - sTot(k);
+        if (o === k || d < 0 || d > 22 || !golpe(o, 'derrapa', 0.7, k)) continue;
+        const l = NR[o.idx], s = o.lat >= k.lat ? 1 : -1; o.vel.x += l.x * s * 10; o.vel.z += l.z * s * 10; o.v *= 0.6;
+      }
+      const fx = Math.sin(k.ang), fz = Math.cos(k.ang);
+      for (let n = 0; n < 40; n++) { const a = (Math.random() - 0.5) * 1.2, c = Math.cos(a), s = Math.sin(a); solta(k.pos.x + fx * 2, 1.2, k.pos.z + fz * 2, n % 2 ? 0xfff06a : 0xffffff, (fx * c + fz * s) * 20, Math.random() * 2, (fz * c - fx * s) * 20, 0.5, 0); }
+    }},
+  esporos: {nome: 'Nuvem de esporos', dur: 0.6, bom: (k) => !!atrasDe(k, 18), ativa: (k) => novoObj('esporos', k, {s: atras(k, 6)})},
+  orbital: {nome: 'Salto orbital', dur: 3, vmax: VTURBO, voa: true, blinda: true, bom: () => true},
+  parrilla: {nome: 'Fumaça da parrilla', dur: 0.6, bom: (k) => !!atrasDe(k, 18), ativa: (k) => novoObj('fumaca', k, {s: atras(k, 6)})},
+  escada: {nome: 'Escada no chão', dur: 0.6, bom: (k) => !!atrasDe(k, 25),
+    ativa: (k) => novoObj('escada', k, {s: atras(k, 5), lat: clamp(k.lat, -LARG / 2 + 4.6, LARG / 2 - 4.6)})},
+  empurra: {nome: 'Carrinho desgovernado', dur: 3.5, vmax: VTURBO * 1.08, mira: true, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 50),
+    ativa: (k) => { k.espAlvo = frenteDe(k, 80)?.i ?? -1; }},
+  glitter: {nome: 'Bomba de glitter', dur: 0.6, bom: (k) => !!frenteDe(k, 90), ativa: (k) => voa('glitter', k, frenteDe(k, 150))},
+  ignicao: {nome: 'Ignição do foguete', dur: 3, vmax: VTURBO * 1.3, ram: true, blinda: true, bom: () => true},
+  generico: {nome: 'Turbo de robô', dur: 3, vmax: VTURBO, bom: () => true},
+};
+function usaItem(k) {
+  if (!k.item || k.roleta > 0 || k.efeito === 'roda' || k.efeito === 'congela') return false;
+  const it = k.item; k.item = ''; k.tItem = 0;
+  if (it === 'turbo') k.turbo = Math.max(k.turbo, 2);
+  else if (it === 'barril') novoObj('barril', k, {s: adiante(k, 3), v: Math.max(OBJ.barril.anda, k.v + 14)});
+  else if (it === 'espuma') novoObj('espuma', k, {s: atras(k, 3.5)});
+  else if (it === 'gelo') voa('gelo', k, frenteDe(k, 150));
+  else if (it === 'escudo') k.escudo = true;
+  else if (it === 'torneira') k.torneira = 5;
+  if (k === jog) recado(ITENS[it].nome + '!', 1);
+  return true;
+}
+function usaEspecial(k) {
+  if (k.copos < ESP_COPOS || k.esp || k.efeito === 'roda' || k.efeito === 'congela') return false;
+  const id = ESPECIAIS[k.especial] ? k.especial : 'generico', E = ESPECIAIS[id];
+  Object.assign(k, {copos: 0, tCheio: 0, esp: id, tEsp: E.dur, espAlvo: -1});
+  E.ativa?.(k);
+  if (k === jog) recado(E.nome + '!', 1.4);
+  else if (Math.hypot(k.pos.x - jog.pos.x, k.pos.z - jog.pos.z) < 40) recado(`${k.nome}: ${E.nome}!`, 1.2);
+  return true;
+}
+function efeitos(k, dt) {
+  if (k.tImune > 0) k.tImune = Math.max(0, k.tImune - dt);
+  if (k.tEfeito > 0 && (k.tEfeito -= dt) <= 0) { k.efeito = ''; k.tEfeito = 0; }
+  if (k.torneira > 0) k.torneira = Math.max(0, k.torneira - dt);
+  if (k.lento > 0) k.lento = Math.max(0, k.lento - dt);
+  if (k.roleta > 0 && (k.roleta -= dt) <= 0) { k.roleta = 0; k.item = k.itemVem; k.itemVem = ''; k.tItem = 0; }
+  if (k.item) k.tItem += dt;
+  if (k.copos >= ESP_COPOS && !k.esp) k.tCheio += dt;
+  if (!k.esp) return;
+  const E = ESPECIAIS[k.esp];
+  if (E.mira && k.espAlvo >= 0) { const a = kartPorI(k.espAlvo); if (!a || a.terminou || sTot(a) - sTot(k) < -3) k.espAlvo = -1; }
+  E.tique?.(k, dt);
+  if ((k.tEsp -= dt) <= 0) { E.fim?.(k); k.esp = ''; k.tEsp = 0; k.espAlvo = -1; }
+}
+function ajustaEntrada(k, e, manual) {
+  if (k.efeito === 'roda' || k.efeito === 'congela') return PARADO;
+  if (k.efeito === 'derrapa') return {acel: e.acel, freio: false, giro: Math.sin(tCorrida * 11 + k.i * 3), drift: false};
+  if (k.efeito === 'tonto') e = {...e, drift: false, giro: manual ? -e.giro : clamp(e.giro + Math.sin(tCorrida * 6 + k.i) * 0.8, -1, 1)};
+  const E = ESPECIAIS[k.esp];
+  if (E?.mira) {
+    const a = kartPorI(k.espAlvo);
+    if (a) {
+      let ax = a.pos.x, az = a.pos.z;
+      if (Math.hypot(ax - k.pos.x, az - k.pos.z) > 14) { const fr = (k.idx + 14 + Math.floor(Math.max(0, k.v) * 0.6)) % N; ax = P[fr].x + NR[fr].x * a.lat; az = P[fr].z + NR[fr].z * a.lat; }
+      return {acel: true, freio: false, drift: false, giro: clamp(difAng(Math.atan2(ax - k.pos.x, az - k.pos.z), k.ang) * 2.5, -1, 1)};
+    }
+    return {...e, acel: true, freio: false};
+  }
+  if (E?.vmax) return {...e, acel: true, freio: false};
+  return e;
+}
+function ameacado(k) {
+  for (const o of objs) {
+    const D = OBJ[o.tipo];
+    if (D.mira && o.alvo === k.i) return true;
+    if (D.anda && o.dono !== k.i) { const d = naFrente(o.s, k); if (d < 0 && d > -25 && Math.abs(o.lat - k.lat) < 2.5) return true; }
+  }
+  for (const o of karts) if (o !== k && ariete(o)) { const d = sTot(k) - sTot(o); if (d > 0 && d < 20) return true; }
+  return false;
+}
+function iaUsa(k) {
+  if (k.item && !k.roleta && k.efeito !== 'roda' && k.efeito !== 'congela') {
+    const t = k.tItem, it = k.item;
+    const usa = it === 'escudo' ? ameacado(k) || t > 9
+      : it === 'barril' ? !!naMiraFrente(k, 38, 2.4) || t > 10
+      : it === 'espuma' ? !!atrasDe(k, 14) || t > 7
+      : it === 'gelo' ? t > 0.8 && (!!frenteDe(k, 120) || t > 6)
+      : it === 'turbo' ? (curvaAdiante(k) < 0.04 && k.v > 14) || Math.abs(k.lat) > LARG / 2 + 0.8 || t > 8
+      : t > 0.4;
+    if (usa) usaItem(k);
+  }
+  if (k.copos >= ESP_COPOS && !k.esp && !k.efeito) {
+    const E = ESPECIAIS[k.especial] || ESPECIAIS.generico;
+    if (E.bom(k) || k.tCheio > 6) usaEspecial(k);
+  }
+}
+function alvoIA(k) {
+  if (ESPECIAIS[k.esp]?.mira) return null;
+  let melhor = null, md = 1e9;
+  for (const o of objs) {
+    const D = OBJ[o.tipo];
+    if (!(D.chao || D.nuvem) || (D.chao && k.esp === 'trilha')) continue;
+    const d = naFrente(o.s, k), folga = D.r + 1.8;
+    if (d < 2 || d > 26 || Math.abs(o.lat - k.faixa) > folga || d > md) continue;
+    md = d;
+    const lado = k.faixa >= o.lat ? 1 : -1;
+    let lat = o.lat + lado * folga;
+    if (Math.abs(lat) > LARG / 2 - 0.6) lat = o.lat - lado * folga;
+    melhor = clamp(lat, -LARG / 2 + 0.6, LARG / 2 - 0.6);
+  }
+  if (melhor !== null) return melhor;
+  const busca = (lista, ate) => {
+    for (const c of lista) {
+      if (c.t > 0) continue;
+      const d = naFrente(DIST[c.j], k), nota = d + Math.abs(c.lat - k.faixa) * 3;
+      if (d > 4 && d < ate && nota < md) { md = nota; melhor = c.lat; }
+    }
+  };
+  if (!k.item && !k.roleta) busca(caixas, 45);
+  if (melhor === null && k.copos < ESP_COPOS && !k.esp) busca(copos, 30);
+  return melhor;
+}
+const texEngradado = tex(256, 192, (g, w, h) => {
+  g.fillStyle = '#ff7a00'; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(90,30,0,.6)';
+  for (let x = 18; x < w - 30; x += 46) { g.beginPath(); g.roundRect(x, 16, 34, 22, 8); g.fill(); }
+  for (let x = 12; x < w - 12; x += 22) for (const y of [146, 166]) g.fillRect(x, y, 14, 10);
+  g.fillStyle = '#ffffff'; g.font = '900 60px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('myTapp', w / 2, 94);
+  g.strokeStyle = '#a84600'; g.lineWidth = 10; g.strokeRect(5, 5, w - 10, h - 10);
+});
+const texTampas = tex(256, 192, (g, w, h) => {
+  g.fillStyle = '#5a2400'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#ff7a00'; g.lineWidth = 12; g.strokeRect(6, 6, w - 12, h - 12);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) {
+    const x = 34 + i * 62, y = 36 + j * 60;
+    g.fillStyle = '#c99400'; g.beginPath(); g.arc(x, y, 20, 0, 7); g.fill();
+    g.fillStyle = '#ffd84a'; g.beginPath(); g.arc(x - 3, y - 3, 11, 0, 7); g.fill();
+  }
+});
+const mEngradado = new THREE.MeshStandardMaterial({map: texEngradado, emissive: 0xffffff, emissiveMap: texEngradado, emissiveIntensity: 0.28, roughness: 0.55});
+const mTampas = new THREE.MeshStandardMaterial({map: texTampas, emissive: 0xffffff, emissiveMap: texTampas, emissiveIntensity: 0.2, roughness: 0.5});
+const nCaixas = FILAS.length * LATS.length, nCopos = GRUPOS_COPO.length * 3;
+const mCaixas = new THREE.InstancedMesh(new THREE.BoxGeometry(1.7, 1.15, 1.25), [mEngradado, mEngradado, mTampas, mTampas, mEngradado, mEngradado], nCaixas);
+mCaixas.castShadow = true; mCaixas.frustumCulled = false; cena.add(mCaixas);
+const gEspumaCopo = new THREE.CylinderGeometry(0.37, 0.35, 0.22, 10); gEspumaCopo.translate(0, 0.46, 0);
+const mCopos = [
+  new THREE.InstancedMesh(new THREE.CylinderGeometry(0.34, 0.25, 0.72, 10), new THREE.MeshStandardMaterial({color: 0xf0a020, emissive: 0xc06a00, emissiveIntensity: 0.5, roughness: 0.2}), nCopos),
+  new THREE.InstancedMesh(gEspumaCopo, new THREE.MeshStandardMaterial({color: 0xfffaf0, emissive: 0xfff4dc, emissiveIntensity: 0.3, roughness: 0.9}), nCopos),
+];
+for (const m of mCopos) { m.castShadow = true; m.frustumCulled = false; cena.add(m); }
+const vCaixa = new Float32Array(nCaixas), vCopo = new Float32Array(nCopos);
+function mostraCaixas(dt, t) {
+  const um = (lista, vis, malhas, y, giro) => {
+    lista.forEach((c, n) => {
+      vis[n] += ((c.t > 0 ? 0 : 1) - vis[n]) * (1 - Math.exp(-(c.t > 0 ? 20 : 5) * dt));
+      const s = Math.max(0.001, vis[n]);
+      _mx.compose(_v.set(c.x, y + Math.sin(t * 2.2 + n) * 0.15, c.z), _q.setFromEuler(_e.set(giro ? 0.22 * Math.sin(t + n) : 0, t * (giro ? 1.6 : 2.4) + n, giro ? 0.12 : 0)), _s.set(s, s, s));
+      for (const m of malhas) m.setMatrixAt(n, _mx);
+    });
+    for (const m of malhas) m.instanceMatrix.needsUpdate = true;
+  };
+  um(caixas, vCaixa, [mCaixas], 1.1, true);
+  um(copos, vCopo, mCopos, 0.95, false);
+}
+const MODELO = {};
+{
+  const novo = (f) => { const g = new THREE.Group(); f(g); return g; };
+  const vidro = (cor, op) => new THREE.MeshBasicMaterial({color: cor, transparent: true, opacity: op, depthWrite: false});
+  MODELO.barril = novo((g) => {
+    const c = new THREE.CylinderGeometry(0.55, 0.55, 1.2, 14); c.rotateZ(Math.PI / 2); peca(g, c, M(0xc9cdd5, 'lata'));
+    for (const x of [-0.42, 0.42]) { const a = new THREE.TorusGeometry(0.56, 0.06, 6, 16); a.rotateY(Math.PI / 2); peca(g, a, M(0x6b6f76, 'lata'), x, 0, 0); }
+    const b = new THREE.CylinderGeometry(0.13, 0.13, 0.1, 8); b.rotateZ(Math.PI / 2); peca(g, b, M(0x2a2a2a), 0.63, 0, 0);
+  });
+  MODELO.carga = novo((g) => {
+    caixa(g, 1.0, 1.0, 1.0, M(0xb07a3e)); caixa(g, 1.04, 1.04, 0.14, M(0x3a2a1a)); caixa(g, 0.14, 1.04, 1.04, M(0x3a2a1a));
+  });
+  MODELO.gelo = novo((g) => { peca(g, new THREE.OctahedronGeometry(0.75), vidro(0xbfefff, 0.7)); peca(g, new THREE.OctahedronGeometry(0.38), M(0xffffff, 'luz')); });
+  MODELO.glitter = novo((g) => {
+    peca(g, new THREE.IcosahedronGeometry(0.55), M(0xff5fc8, 'luz'));
+    const a = new THREE.TorusGeometry(0.72, 0.06, 6, 20); a.rotateX(1.2); peca(g, a, M(0xffe14a, 'luz'));
+  });
+  MODELO.espuma = novo((g) => {
+    const d = new THREE.CylinderGeometry(2.0, 2.0, 0.03, 18); peca(g, d, M(0xd99a2b, 'lata'));
+    for (let n = 0; n < 8; n++) { const a = n * 0.785, r = 0.6 + (n % 3) * 0.45, b = peca(g, new THREE.SphereGeometry(0.55, 8, 6), M(0xfffaf0), Math.cos(a) * r, 0.05, Math.sin(a) * r); b.scale.set(1, 0.32, 1); }
+  });
+  MODELO.banqueta = novo((g) => {
+    peca(g, new THREE.CylinderGeometry(0.45, 0.42, 0.14, 12), M(0xc0262d), 0, 1.0, 0);
+    for (let n = 0; n < 3; n++) { const a = n * 2.094; osso(g, [Math.cos(a) * 0.3, 0.95, Math.sin(a) * 0.3], [Math.cos(a) * 0.48, 0, Math.sin(a) * 0.48], 0.045, M(0x3a3a3e, 'lata')); }
+    const anel = new THREE.TorusGeometry(0.4, 0.035, 5, 14); anel.rotateX(Math.PI / 2); peca(g, anel, M(0x3a3a3e, 'lata'), 0, 0.4, 0);
+  });
+  MODELO.escada = novo((g) => {
+    for (const z of [-0.32, 0.32]) caixa(g, 9.2, 0.12, 0.16, M(0xc8ccd2, 'lata'), 0, 0.08, z);
+    for (let x = -4.4; x <= 4.41; x += 0.55) caixa(g, 0.07, 0.07, 0.64, M(0xa9adb3, 'lata'), x, 0.1, 0);
+  });
+  MODELO.esporos = novo((g) => { for (let n = 0; n < 7; n++) { const a = n * 0.9; peca(g, new THREE.IcosahedronGeometry(1.6 + (n % 3) * 0.5, 1), vidro(n % 2 ? 0x9cff6a : 0x5fd8a0, 0.28), Math.cos(a) * 2.6, 0.4 + (n % 3) * 0.7, Math.sin(a) * 2.6).castShadow = false; } });
+  MODELO.fumaca = novo((g) => { for (let n = 0; n < 7; n++) { const a = n * 0.9; peca(g, new THREE.IcosahedronGeometry(1.8 + (n % 3) * 0.6, 1), vidro(n % 2 ? 0x9a9a9a : 0x6e6e6e, 0.36), Math.cos(a) * 2.8, 0.6 + (n % 3) * 0.8, Math.sin(a) * 2.8).castShadow = false; } });
+  MODELO.torneira = novo((g) => {
+    const inox = M(0xd8dce2, 'lata');
+    peca(g, new THREE.CylinderGeometry(0.35, 0.42, 0.12, 12), inox, 0, 0.06, 0);
+    peca(g, new THREE.CylinderGeometry(0.2, 0.2, 1.0, 12), inox, 0, 0.6, 0);
+    osso(g, [0, 1.0, 0], [0, 1.0, 0.62], 0.13, inox, 10);
+    osso(g, [0, 1.0, 0.62], [0, 0.72, 0.62], 0.1, inox, 10);
+    osso(g, [0, 1.1, -0.05], [0, 1.85, 0.45], 0.08, M(0x1d1f23), 8);
+    peca(g, new THREE.SphereGeometry(0.2, 10, 8), M(0xff7a00, 'luz'), 0, 1.9, 0.48);
+    peca(g, new THREE.CylinderGeometry(0.07, 0.07, 0.7, 6), M(0xffb000, 'luz'), 0, 0.37, 0.62);
+  });
+}
+const OBJ_Y = {barril: 0.55, carga: 0.5, gelo: 1.3, glitter: 1.3, espuma: 0.03, banqueta: 0, escada: 0, esporos: 0.6, fumaca: 0.8};
+const malhaObj = new Map();
+function mostraObjs(dt, t) {
+  for (const o of objs) {
+    let m = malhaObj.get(o.id);
+    if (!m) { m = MODELO[o.tipo].clone(); m.rotation.order = 'YXZ'; cena.add(m); malhaObj.set(o.id, m); }
+    const D = OBJ[o.tipo], j = idxDe(o.s), rumo = Math.atan2(T[j].x, T[j].z);
+    m.position.set(o.x, OBJ_Y[o.tipo], o.z);
+    if (D.anda) m.rotation.set(o.s / 0.55, rumo, 0);
+    else if (D.mira) { m.rotation.set(t * 4, t * 6, 0); m.position.y += Math.sin(t * 9) * 0.1; }
+    else m.rotation.set(0, rumo, 0);
+    const resta = D.vida - o.t;
+    m.scale.setScalar(D.nuvem ? Math.min(1, o.t * 3, resta) * (1 + Math.sin(t * 3) * 0.04) : resta < 0.6 ? Math.max(0.01, resta / 0.6) : Math.min(1, 0.3 + o.t * 6));
+    const R = () => Math.random() - 0.5;
+    if (o.tipo === 'esporos' && Math.random() < 0.8) solta(o.x + R() * 9, 0.4 + Math.random() * 2.5, o.z + R() * 9, Math.random() < 0.5 ? 0xb6ff6a : 0x6fd84a, R() * 0.8, 0.6, R() * 0.8, 1, -0.3);
+    if (o.tipo === 'fumaca' && Math.random() < 0.9) solta(o.x + R() * 9, 0.4 + Math.random() * 2, o.z + R() * 9, Math.random() < 0.5 ? 0xa0a0a0 : 0x6a6a6a, R() * 0.6, 1.2, R() * 0.6, 1.2, -0.4);
+    if (o.tipo === 'glitter') solta(o.x, 1.3, o.z, Math.random() < 0.5 ? 0xff5fc8 : 0xffffff, R() * 2, R() * 2, R() * 2, 0.5, 0);
+    if (o.tipo === 'gelo') solta(o.x, 1.3, o.z, 0xe8fbff, R() * 2, R() * 2, R() * 2, 0.4, 0);
+  }
+  if (malhaObj.size > objs.length || objs.some((o) => !malhaObj.has(o.id))) {
+    const vivos = new Set(objs.map((o) => o.id));
+    for (const [id, m] of malhaObj) if (!vivos.has(id)) { cena.remove(m); malhaObj.delete(id); }
+  }
+}
+const gBolha = new THREE.IcosahedronGeometry(2.1, 1), gBolhaFio = new THREE.IcosahedronGeometry(2.13, 1), gGeloFx = new THREE.BoxGeometry(2.7, 2.3, 3.7);
+const gCasco = new THREE.SphereGeometry(2.0, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+const mBolha = new THREE.MeshBasicMaterial({color: 0x6fe3ff, transparent: true, opacity: 0.2, depthWrite: false});
+const mBolhaFio = new THREE.MeshBasicMaterial({color: 0xbff4ff, wireframe: true, transparent: true, opacity: 0.55, depthWrite: false});
+const mGeloFx = new THREE.MeshStandardMaterial({color: 0xcff4ff, transparent: true, opacity: 0.55, roughness: 0.05, metalness: 0.2, depthWrite: false});
+const mCascoFx = new THREE.MeshStandardMaterial({color: 0x2e9b46, emissive: 0x0d4a1c, roughness: 0.25, metalness: 0.4, transparent: true, opacity: 0.55, depthWrite: false});
+function fxDe(k) {
+  if (k.fx) return k.fx;
+  const alto = k.tag.position.y - 0.6, fx = {};
+  fx.bolha = new THREE.Group(); fx.bolha.add(new THREE.Mesh(gBolha, mBolha), new THREE.Mesh(gBolhaFio, mBolhaFio));
+  fx.bolha.position.y = alto * 0.5 + 0.2; fx.bolha.scale.setScalar(Math.max(1, (alto + 0.8) / 2.4));
+  fx.gelo = new THREE.Mesh(gGeloFx, mGeloFx); fx.gelo.scale.set(1, Math.max(1, (alto + 0.5) / 2.3), 1); fx.gelo.position.y = 1.15 * fx.gelo.scale.y;
+  fx.casco = new THREE.Mesh(gCasco, mCascoFx); fx.casco.scale.set(1.05, Math.max(0.8, alto / 1.8), 1.3); fx.casco.position.y = 0.2;
+  fx.torneira = MODELO.torneira.clone(); fx.torneira.position.y = alto - 0.1;
+  for (const o of Object.values(fx)) { o.visible = false; k.g.add(o); }
+  return (k.fx = fx);
+}
+function efeitosVisuais(k, dt, t) {
+  const E = ESPECIAIS[k.esp], s = Math.sin(k.ang), c = Math.cos(k.ang), x = k.pos.x, z = k.pos.z, alto = k.tag.position.y - 0.6, R = () => Math.random() - 0.5;
+  if (k.efeito === 'roda') { k.giroFx = (k.giroFx || 0) + dt * 16; k.corpo.rotation.y = k.giroFx; } else k.giroFx = 0;
+  let y = 0;
+  if (k.esp === 'orbital') y = Math.sin(Math.PI * clamp(1 - k.tEsp / E.dur, 0, 1)) * 6;
+  k.g.position.y = y;
+  const esc = k.esp === 'bolso' ? 0.45 : 1;
+  if (Math.abs(k.g.scale.x - esc) > 0.002) k.g.scale.setScalar(k.g.scale.x + (esc - k.g.scale.x) * (1 - Math.exp(-8 * dt)));
+  if (k.escudo || k.efeito === 'congela' || k.torneira > 0 || k.esp === 'casco' || k.fx) {
+    const fx = fxDe(k);
+    fx.bolha.visible = k.escudo; fx.gelo.visible = k.efeito === 'congela'; fx.torneira.visible = k.torneira > 0; fx.casco.visible = k.esp === 'casco';
+    if (k.escudo) fx.bolha.rotation.y += dt * 1.2;
+  }
+  const forte = k.turbo > 0 || k.torneira > 0 || (E?.vmax || 0) > VMAX;
+  k.chama.visible = forte;
+  if (forte) k.chama.scale.setScalar((k.esp === 'ignicao' ? 2.4 : 1) * (0.8 + Math.random() * 0.6));
+  if (k.efeito === 'roda' && Math.random() < 0.6) solta(x, alto + 0.9, z, 0xffe14a, R() * 4, 1.5, R() * 4, 0.45, 3);
+  if (k.efeito === 'tonto') for (let n = 0; n < 2; n++) { const a = t * 0.009 + n * Math.PI; solta(x + Math.cos(a) * 1.1, alto + 1.1, z + Math.sin(a) * 1.1, 0xb6ff6a, 0, 0.2, 0, 0.25, 0); }
+  if (k.efeito === 'glitter') for (let n = 0; n < 3; n++) solta(x + R() * 3, 0.3 + Math.random() * alto, z + R() * 3, [0xff5fc8, 0xffffff, 0xffe14a][n], R(), 0.8, R(), 0.6, 0.5);
+  if (k.efeito === 'derrapa') solta(x + R() * 2, 0.2, z + R() * 2, 0xfffaf0, R() * 3, 1.5, R() * 3, 0.4);
+  if (k.efeito === 'congela' && Math.random() < 0.5) solta(x + R() * 2.6, alto + 0.8, z + R() * 3, 0xe8fbff, R(), 0.4, R(), 0.7, 1);
+  if (k.torneira > 0) solta(x + s * 0.6, y + alto + 0.3, z + c * 0.6, 0xffb000, R(), -1, R(), 0.5, 9);
+  if (!E) return;
+  if (k.esp === 'rodada') for (let n = 0; n < 5; n++) solta(x + s * 1.4, alto * 0.75, z + c * 1.4, n % 2 ? 0xffb000 : 0xfff4d6, s * 20 + R() * 4, 1 + Math.random() * 2.5, c * 20 + R() * 4, 0.55, 6);
+  if (k.esp === 'vacuo') for (let n = 0; n < 2; n++) solta(x + R() * 3, 0.4 + Math.random() * 1.6, z + R() * 3, 0xffffff, -s * 26, 0, -c * 26, 0.22, 0);
+  if (k.esp === 'trilha') for (let n = 0; n < 2; n++) solta(x - s * 1.3 + R(), 0.3, z - c * 1.3 + R(), 0x9a7a4a, -s * 4 + R() * 3, 2 + Math.random() * 2, -c * 4 + R() * 3, 0.7, 4);
+  if (k.esp === 'orbital') solta(x + R() * 0.6, y + 0.2, z + R() * 0.6, Math.random() < 0.5 ? 0x6fd8ff : 0xffffff, R() * 2, -7, R() * 2, 0.35, 0);
+  if (k.esp === 'ignicao') for (let n = 0; n < 3; n++) solta(x - s * 2.2, 0.7, z - c * 2.2, n % 2 ? 0xff7a00 : 0xffd24a, -s * 10 + R() * 4, Math.random() * 3, -c * 10 + R() * 4, 0.4, -2);
+  if (k.esp === 'empurra' || k.esp === 'casco') if (Math.random() < 0.4) solta(x + s * 1.6, 0.4, z + c * 1.6, 0xfff2b0, R() * 5, 2, R() * 5, 0.3, 6);
+}
+const CAMPOS = ['i', 'ang', 'v', 'idx', 'lat', 'volta', 'metade', 'drift', 'carga', 'turbo', 'pulo', 'terminou', 'chegada', 'tempo', 'fator',
+  'faixa', 'faixaAlvo', 'faixaT', 'efeito', 'tEfeito', 'tImune', 'escudo', 'torneira', 'lento', 'esp', 'tEsp', 'espAlvo', 'copos', 'tCheio',
+  'item', 'roleta', 'itemVem', 'tItem'];
+function estadoKart(k) {
+  const o = {};
+  for (const c of CAMPOS) o[c] = k[c];
+  Object.assign(o, {x: k.pos.x, z: k.pos.z, vx: k.vel.x, vz: k.vel.z});
+  return o;
+}
+function aplicaKart(k, o) { for (const c of CAMPOS) k[c] = o[c]; k.pos.set(o.x, 0, o.z); k.vel.set(o.vx, 0, o.vz); }
+function estadoJogo() {
+  return {versao: 1, pista: PISTAS[pistaAtual].id, modo, copa: copa && {n: copa.n, pts: {...copa.pts}, t: copa.t || 0, ini: copa.ini || null}, estado, tCont, tCorrida, tVolta, melhorVolta,
+    chegados, tFim, jogador: jog.i, karts: karts.map(estadoKart), caixas: caixas.map((c) => c.t), copos: copos.map((c) => c.t),
+    objs: objs.map((o) => ({...o})), proxId};
+}
+function aplicaEstado(s) {
+  const p = PISTAS.findIndex((x) => x.id === s.pista);
+  if (p >= 0 && p !== pistaAtual) trocaPista(p);
+  for (const k of karts) k.g.visible = false;
+  karts = s.karts.map((o) => { const k = kartDe(o.i); aplicaKart(k, o); k.g.visible = true; return k; });
+  if (karts.some((k) => k.i === s.jogador)) { sel = s.jogador; jog = kartDe(sel); }
+  for (const k of karts) { k.ia = k !== jog; k.tag.visible = k !== jog; }
+  s.caixas.forEach((t, n) => { if (caixas[n]) caixas[n].t = t; });
+  s.copos.forEach((t, n) => { if (copos[n]) copos[n].t = t; });
+  objs = s.objs.map((o) => ({...o})); proxId = s.proxId;
+  ({modo, estado, tCont, tCorrida, tVolta, melhorVolta, chegados, tFim} = s);
+  copa = s.copa && {n: s.copa.n, pts: {...s.copa.pts}, t: s.copa.t || 0, ini: s.copa.ini || null};
+  mostra(estado === 'pausa' ? 'pausa' : estado === 'fimtela' ? 'fim' : null);
+}
+espalhaCaixas();
+let estado = 'menu', tCont = 0, tCorrida = 0, tVolta = 0, melhorVolta = 0, chegados = 0, tFim = 0, tAviso = 0;
+let modo = 'corrida', copa = null, escPista = 0, iniCorrida = '';
+const PONTOS = [15, 12, 10, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+const progresso = k => k.terminou ? 100 - k.chegada : k.volta + k.idx / N;
+function cruzouLinha(k) {
+  if (estado !== 'corrida') return;
+  if (k === jog && k.volta >= 2 && k.volta <= VOLTAS + 1) {
+    const tv = tCorrida - tVolta;
+    if (!melhorVolta || tv < melhorVolta) melhorVolta = tv;
+    tVolta = tCorrida;
+    if (k.volta === VOLTAS) avisa('ÚLTIMA VOLTA', 1.6);
+  }
+  if (k.volta > VOLTAS && !k.terminou) {
+    k.terminou = true; k.chegada = ++chegados; k.tempo = tCorrida;
+    if (k === jog) { avisa(`${k.chegada}º!`, 2.5); tFim = 2.6; }
+  }
+}
+function largada() {
+  const grade = embaralha(karts.filter((k) => k !== jog)); grade.splice(Math.min(5, grade.length), 0, jog);
+  grade.forEach((k, i) => {
+    const fila = Math.floor(i / 2), col = i % 2;
+    const j = N - 10 - fila * 7, l = (col ? -1 : 1) * 3.6;
+    k.idx = j; k.pos.set(P[j].x + NR[j].x * l, 0, P[j].z + NR[j].z * l);
+    k.ang = Math.atan2(T[j].x, T[j].z); k.camAng = k.ang;
+    k.vel.set(0, 0, 0);
+    Object.assign(k, {v: 0, lat: l, volta: 0, metade: true, drift: 0, carga: 0, turbo: 0, pulo: 0, desliza: 0,
+      faixa: l, faixaAlvo: l, faixaT: 1 + Math.random() * 2, terminou: false, chegada: 0, tempo: 0, fator: k.base, ...zeraKart()});
+    k.g.position.y = 0; k.g.scale.setScalar(1); k.corpo.rotation.y = 0;
+  });
+  for (const c of caixas) c.t = 0;
+  for (const c of copos) c.t = 0;
+  objs = []; tMsg = 0; $('hud-msg').textContent = '';
+  tCorrida = 0; tVolta = 0; melhorVolta = 0; chegados = 0; tFim = 0;
+  camAng = jog.ang; cam.position.set(jog.pos.x - Math.sin(camAng) * 8, 3.4, jog.pos.z - Math.cos(camAng) * 8);
+}
+function comeca() {
+  const doFim = estado === 'fimtela';
+  if (modo === 'copa') {
+    if (estado === 'escolha' || !copa) { copa = {n: 0, pts: {}}; if (pistaAtual !== 0) trocaPista(0); }
+    else if (doFim) {
+      if (copa.n < PISTAS.length - 1) trocaPista(++copa.n);
+      else { copa = {n: 0, pts: {}}; trocaPista(0); sorteia(); }
+    }
+  } else if (doFim || !karts.includes(jog)) sorteia();
+  iniCorrida = new Date().toISOString();
+  if (modo === 'copa' && copa && !copa.ini) { copa.ini = iniCorrida; copa.t = 0; }
+  largada(); mostra(null); estado = 'contagem'; tCont = 3; $('aviso').textContent = '';
+}
+function trocaPista(i) {
+  pistaAtual = ((i % PISTAS.length) + PISTAS.length) % PISTAS.length;
+  limpaPista(); montaPista(PISTAS[pistaAtual]); espalhaCaixas(); objs = []; ajustaMini();
+}
+function escolhePista(i) {
+  escPista = (i + PISTAS.length + 1) % (PISTAS.length + 1); modo = escPista === PISTAS.length ? 'copa' : 'corrida';
+  const alvo = modo === 'copa' ? 0 : escPista;
+  if (alvo !== pistaAtual) { trocaPista(alvo); if (estado === 'escolha') { largada(); foco.copy(jog.pos); } }
+  document.querySelectorAll('#pistas button').forEach((b, j) => b.classList.toggle('sel', j === escPista));
+  $('b-largar').textContent = modo === 'copa' ? 'Correr a copa ▶' : 'Correr ▶';
+  try { localStorage.setItem(CHAVE_PISTA, modo === 'copa' ? 'copa' : PISTAS[alvo].id); } catch {}
+  menuRec();
+}
+function abreEscolha() {
+  estado = 'escolha'; escolhe(sel); foco.copy(jog.pos); mostra('escolha');
+}
+function escolhe(i) {
+  sel = (i + PILOTOS.length) % PILOTOS.length; jog = kartDe(sel);
+  if (estado === 'escolha') { sorteia(); largada(); }
+  document.querySelectorAll('#cards button').forEach((b, j) => { b.classList.toggle('sel', j === sel); if (j === sel && estado === 'escolha') b.scrollIntoView({block: 'nearest'}); });
+  $('esc-info').textContent = `${jog.nome} · ${jog.veic.desc} · especial: ${(ESPECIAIS[jog.especial] || ESPECIAIS.generico).nome}`;
+  try { localStorage.setItem(CHAVE_PIL, jog.nome); } catch {}
+}
+const tecla = {}, toque = {};
+addEventListener('keydown', (e) => {
+  tecla[e.code] = true;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  if (e.code === 'Escape') { if (estado === 'corrida' || estado === 'contagem') pausa(true); else if (estado === 'pausa') pausa(false); }
+  if (e.code === 'Enter') { if (estado === 'menu') abreEscolha(); else if (estado === 'escolha' || estado === 'fimtela') comeca(); }
+  if (estado === 'escolha' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) escolhe(sel + (e.code === 'ArrowRight' ? 1 : -1));
+  if (estado === 'escolha' && (e.code === 'ArrowUp' || e.code === 'ArrowDown')) escolhePista(escPista + (e.code === 'ArrowDown' ? 1 : -1));
+  if (estado === 'corrida' && !e.repeat) {
+    if (['KeyX', 'KeyE', 'ControlLeft', 'ControlRight'].includes(e.code)) usaItem(jog);
+    if (e.code === 'KeyC' || e.code === 'KeyQ') usaEspecial(jog);
+  }
+  if (estado === 'escolha' && e.code === 'Escape') { estado = 'menu'; mostra('menu'); }
+});
+addEventListener('keyup', (e) => { tecla[e.code] = false; });
+addEventListener('blur', () => { for (const k in tecla) tecla[k] = false; if (estado === 'corrida') pausa(true); });
+document.querySelectorAll('#toque button[data-k]').forEach((b) => {
+  const liga = (v) => (e) => { e.preventDefault(); toque[b.dataset.k] = v; b.classList.toggle('on', v); };
+  b.addEventListener('pointerdown', liga(true)); b.addEventListener('pointerup', liga(false));
+  b.addEventListener('pointercancel', liga(false)); b.addEventListener('pointerleave', liga(false));
+});
+document.querySelectorAll('#toque button[data-a]').forEach((b) => b.addEventListener('pointerdown', (e) => {
+  e.preventDefault(); if (estado === 'corrida') (b.dataset.a === 'item' ? usaItem : usaEspecial)(jog);
+}));
+if (matchMedia('(pointer: coarse)').matches) { document.getElementById('toque').classList.remove('oculto'); document.body.classList.add('toque'); }
+function entrada() {
+  const esq = tecla.ArrowLeft || tecla.KeyA || toque.esq, dir = tecla.ArrowRight || tecla.KeyD || toque.dir;
+  return {
+    acel: !!(tecla.ArrowUp || tecla.KeyW || toque.acel),
+    freio: !!(tecla.ArrowDown || tecla.KeyS || toque.freio),
+    giro: (esq ? 1 : 0) - (dir ? 1 : 0),
+    drift: !!(tecla.Space || tecla.ShiftLeft || tecla.ShiftRight || toque.drift),
+  };
+}
+const $ = (id) => document.getElementById(id);
+const fmt = (t) => { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s.toFixed(3).padStart(6, '0')}`; };
+const chaveRec = () => CHAVE_REC + '-' + PISTAS[pistaAtual].id;
+const lerRec = () => { try { return parseFloat(localStorage.getItem(chaveRec())) || (PISTAS[pistaAtual].id === 'lupulo' && parseFloat(localStorage.getItem(CHAVE_REC))) || 0; } catch { return 0; } };
+const gravaRec = (t) => { try { localStorage.setItem(chaveRec(), String(t)); } catch {} };
+function mostra(id) {
+  for (const t of ['menu', 'escolha', 'pausa', 'fim']) $(t).classList.toggle('oculto', t !== id);
+  $('toque').style.visibility = id ? 'hidden' : '';
+}
+function avisa(txt, dur) { const a = $('aviso'); a.textContent = txt; a.style.fontSize = txt.length > 4 ? 'clamp(40px,9vw,100px)' : ''; tAviso = dur; }
+function pausa(sim) { estado = sim ? 'pausa' : (tCont > 0 ? 'contagem' : 'corrida'); mostra(sim ? 'pausa' : null); }
+function menuRec() { const r = lerRec(); $('menu-rec').textContent = r ? `Seu recorde no ${PISTAS[pistaAtual].nome}, neste aparelho: ${fmt(r)}` : ''; }
+function telaFim() {
+  estado = 'fimtela';
+  const ord = ordem();
+  $('fim-pos').textContent = `Você chegou em ${jog.chegada}º`;
+  const r = lerRec(), novo = !r || jog.tempo < r;
+  if (novo) gravaRec(jog.tempo);
+  $('fim-rec').textContent = `${PISTAS[pistaAtual].nome} · melhor volta ${fmt(melhorVolta)} · ${novo ? 'novo recorde neste aparelho!' : 'recorde: ' + fmt(r)}`;
+  const fimISO = new Date().toISOString(), mv = Math.round(melhorVolta * 1000);
+  const corrida = {prova: PISTAS[pistaAtual].id, tempo_ms: Math.round(jog.tempo * 1000), melhor_volta_ms: mv >= 5000 && mv <= 600000 ? mv : null,
+    posicao: jog.chegada, piloto: jog.nome, na_copa: modo === 'copa' && !!copa, iniciada_em: iniCorrida || fimISO, terminada_em: fimISO};
+  let daCopa = null;
+  if (modo === 'copa' && copa) {
+    const ganho = {};
+    copa.t = (copa.t || 0) + jog.tempo;
+    ord.forEach((k, n) => { ganho[k.i] = PONTOS[n] ?? 0; copa.pts[k.i] = (copa.pts[k.i] || 0) + ganho[k.i]; });
+    const tab = [...karts].sort((a, b) => copa.pts[b.i] - copa.pts[a.i]), minha = tab.indexOf(jog) + 1, ultima = copa.n >= PISTAS.length - 1;
+    $('fim-copa').textContent = ultima ? (tab[0] === jog ? 'Você venceu a Copa myTapp!' : `Quem levou a Copa myTapp: ${tab[0].nome}. Você ficou em ${minha}º.`)
+      : `Copa myTapp · pista ${copa.n + 1} de ${PISTAS.length} · você está em ${minha}º na copa`;
+    $('fim-tab').innerHTML = tab.map((k, n) =>
+      `<tr class="${k === jog ? 'eu' : ''}"><td>${n + 1}º</td><td>${k.nome}</td><td>+${ganho[k.i]}</td><td>${copa.pts[k.i]} pts</td></tr>`).join('');
+    $('b-denovo').textContent = ultima ? 'Nova copa ▶' : `Próxima: ${PISTAS[copa.n + 1].nome} ▶`;
+    if (ultima) daCopa = {prova: 'copa', tempo_ms: Math.round(copa.t * 1000), posicao: minha, pontos: copa.pts[jog.i] || 0, piloto: jog.nome,
+      na_copa: false, iniciada_em: copa.ini || corrida.iniciada_em, terminada_em: fimISO};
+  } else {
+    $('fim-copa').textContent = '';
+    $('fim-tab').innerHTML = ord.map((k, i) =>
+      `<tr class="${k === jog ? 'eu' : ''}"><td>${i + 1}º</td><td>${k.nome}</td><td>${k.terminou ? fmt(k.tempo) : 'na pista'}</td></tr>`).join('');
+    $('b-denovo').textContent = 'Correr de novo';
+  }
+  mostra('fim');
+  gim.fim(corrida, daCopa);
+}
+$('b-correr').onclick = abreEscolha; $('b-largar').onclick = comeca; $('b-denovo').onclick = comeca; $('b-trocar').onclick = abreEscolha;
+const gim = {fim() {}};
+$('cards').innerHTML = PILOTOS.map((k, i) =>
+  `<button class="card" data-i="${i}"><b style="color:${hex(k.cor)}">${k.nome}</b><small>${k.veic.desc}</small></button>`).join('');
+document.querySelectorAll('#cards button').forEach((b) => { b.onclick = () => escolhe(+b.dataset.i); b.ondblclick = comeca; });
+escolhe(sel); mostra('menu');
+$('b-continuar').onclick = () => pausa(false);
+$('b-reiniciar').onclick = comeca;
+menuRec();
+function hud() {
+  const corre = estado !== 'menu' && estado !== 'escolha';
+  for (const id of ['hud-volta', 'hud-tempo', 'hud-melhor', 'hud-pos', 'hud-vel', 'hud-turbo', 'hud-item', 'hud-esp', 'hud-msg']) $(id).classList.toggle('oculto', !corre);
+  if (!corre) { $('brilho').style.opacity = '0'; return; }
+  hudItens(performance.now());
+  $('hud-volta').textContent = `VOLTA ${clamp(jog.volta, 1, VOLTAS)}/${VOLTAS}`;
+  $('hud-tempo').textContent = fmt(jog.terminou ? jog.tempo : tCorrida);
+  $('hud-melhor').textContent = melhorVolta ? `melhor volta ${fmt(melhorVolta)}` : '';
+  const pos = [...karts].sort((a, b) => progresso(b) - progresso(a)).indexOf(jog) + 1;
+  $('hud-pos').innerHTML = `${pos}º<small>/${karts.length}</small>`;
+  $('hud-vel').innerHTML = `${Math.round(Math.abs(jog.v) * 3.6)} <small>km/h</small>`;
+  const tb = $('hud-turbo');
+  if (jog.turbo > 0) { tb.textContent = 'TURBO!'; tb.style.color = '#ffb000'; }
+  else if (jog.drift) { tb.textContent = jog.carga > 2.2 ? 'DRIFT ●●' : jog.carga > 1 ? 'DRIFT ●' : 'DRIFT'; tb.style.color = jog.carga > 2.2 ? '#ff8a1e' : jog.carga > 1 ? '#48c6ff' : '#ddd'; }
+  else tb.textContent = '';
+}
+const hItem = $('hud-item'), hCx = hItem.querySelector('.cx'), hIc = hItem.querySelector('.ic'), hEsc = hItem.querySelector('.esc'), hNm = hItem.querySelector('.nm');
+const hEsp = $('hud-esp'), hEspTx = hEsp.querySelector('.tx'), hEspBarra = hEsp.querySelector('.barra i');
+const muda = (el, v) => { if (el.textContent !== v) el.textContent = v; };
+function hudItens(t) {
+  const toque = document.body.classList.contains('toque');
+  if (jog.roleta > 0) { muda(hIc, ITENS[LISTA_ITENS[Math.floor(t / 80) % LISTA_ITENS.length]].ic); muda(hNm, 'sorteando…'); }
+  else if (jog.item) { muda(hIc, ITENS[jog.item].ic); muda(hNm, `${ITENS[jog.item].nome} · ${toque ? 'ITEM' : 'X'}`); }
+  else { muda(hIc, ''); muda(hNm, ''); }
+  hCx.classList.toggle('gira', jog.roleta > 0);
+  muda(hEsc, jog.escudo ? '🛡️' : jog.torneira > 0 ? '🚰' : '');
+  const E = ESPECIAIS[jog.especial] || ESPECIAIS.generico, ativo = ESPECIAIS[jog.esp], pronto = !ativo && jog.copos >= ESP_COPOS;
+  muda(hEspTx, ativo ? `${ativo.nome}!` : pronto ? `${E.nome} · ${toque ? 'toque ESP' : 'aperte C'}` : `${E.nome} · copinhos ${jog.copos}/${ESP_COPOS}`);
+  const w = ((ativo ? jog.tEsp / ativo.dur : jog.copos / ESP_COPOS) * 100).toFixed(0) + '%';
+  if (hEspBarra.style.width !== w) hEspBarra.style.width = w;
+  hEsp.classList.toggle('pronto', pronto);
+  const b = jog.efeito === 'glitter' ? (0.8 * Math.min(1, jog.tEfeito)).toFixed(2) : '0';
+  if ($('brilho').style.opacity !== b) $('brilho').style.opacity = b;
+}
+const mini = $('mini'), mg = mini.getContext('2d'), DPR = Math.min(devicePixelRatio, 2), MS = 150 * DPR;
+mini.width = mini.height = MS;
+let mEsc = 1, mcx = 0, mcz = 0;
+function ajustaMini() { mEsc = (MS - 22 * DPR) / Math.max(maxX - minX, maxZ - minZ); mcx = (minX + maxX) / 2; mcz = (minZ + maxZ) / 2; }
+ajustaMini();
+const mX = (x) => MS / 2 - (x - mcx) * mEsc, mY = (z) => MS / 2 - (z - mcz) * mEsc;
+function minimapa() {
+  mg.clearRect(0, 0, MS, MS);
+  mg.lineJoin = 'round'; mg.beginPath();
+  for (let i = 0; i <= N; i += 6) { const p = P[i % N]; i ? mg.lineTo(mX(p.x), mY(p.z)) : mg.moveTo(mX(p.x), mY(p.z)); }
+  mg.closePath();
+  mg.strokeStyle = 'rgba(0,0,0,.55)'; mg.lineWidth = 9 * DPR; mg.stroke();
+  mg.strokeStyle = 'rgba(255,255,255,.85)'; mg.lineWidth = 5 * DPR; mg.stroke();
+  for (const k of [...karts].sort((a) => (a === jog ? 1 : -1))) {
+    mg.beginPath(); mg.arc(mX(k.pos.x), mY(k.pos.z), (k === jog ? 5.5 : 4) * DPR, 0, 7);
+    mg.fillStyle = '#' + k.cor.toString(16).padStart(6, '0'); mg.fill();
+    mg.lineWidth = 1.5 * DPR; mg.strokeStyle = k === jog ? '#fff' : '#000'; mg.stroke();
+  }
+}
+$('pistas').innerHTML = [...PISTAS.map((p) => p.nome), 'Copa myTapp (as 4)'].map((n, i) => `<button class="pista" data-i="${i}">${n}</button>`).join('');
+document.querySelectorAll('#pistas button').forEach((b) => { b.onclick = () => escolhePista(+b.dataset.i); });
+escolhePista((() => { try { return localStorage.getItem(CHAVE_PISTA) === 'copa' ? PISTAS.length : pistaAtual; } catch { return pistaAtual; } })());
+const MAXP = 900, pp = new Float32Array(MAXP * 3).fill(-99), pc = new Float32Array(MAXP * 3);
+const part = Array.from({length: MAXP}, () => ({vida: 0, x: 0, y: -99, z: 0, vx: 0, vy: 0, vz: 0, gr: 7}));
+const gPart = new THREE.BufferGeometry();
+gPart.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+gPart.setAttribute('color', new THREE.BufferAttribute(pc, 3));
+const pontos = new THREE.Points(gPart, new THREE.PointsMaterial({size: 0.3, vertexColors: true, transparent: true, depthWrite: false}));
+pontos.frustumCulled = false; cena.add(pontos);
+let pIdx = 0; const cTmp = new THREE.Color();
+function solta(x, y, z, cor, vx, vy, vz, vida, gr = 7) {
+  const p = part[pIdx]; Object.assign(p, {x, y, z, vx, vy, vz, vida, gr});
+  cTmp.setHex(cor); pc.set([cTmp.r, cTmp.g, cTmp.b], pIdx * 3); pIdx = (pIdx + 1) % MAXP;
+}
+function particulas(dt) {
+  for (let i = 0; i < MAXP; i++) {
+    const p = part[i];
+    if (p.vida > 0) { p.vida -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.vy -= p.gr * dt; if (p.vida <= 0) p.y = -99; }
+    pp[i * 3] = p.x; pp[i * 3 + 1] = p.y; pp[i * 3 + 2] = p.z;
+  }
+  gPart.attributes.position.needsUpdate = true; gPart.attributes.color.needsUpdate = true;
+}
+function estoura(x, y, z, cores, n, forca = 6, vida = 0.6, gr = 7) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.283, r = Math.random() * forca;
+    solta(x, y, z, cores[i % cores.length], Math.cos(a) * r, (0.4 + Math.random()) * forca * 0.7, Math.sin(a) * r, vida * (0.6 + Math.random() * 0.6), gr);
+  }
+}
+function visual(k, dt) {
+  k.g.position.set(k.pos.x, 0, k.pos.z);
+  k.g.rotation.y = k.ang;
+  if (k.tag.visible) k.tag.material.opacity = clamp((k.g.position.distanceTo(cam.position) - 5) / 4, 0, 1);
+  k.desliza += ((k.drift ? k.drift * 0.32 : 0) - k.desliza) * (1 - Math.exp(-8 * dt));
+  k.corpo.rotation.y = k.desliza;
+  k.corpo.rotation.z = -k.desliza * 0.25;
+  if (k.pulo > 0) { k.pulo -= dt; k.corpo.position.y = Math.sin(clamp(1 - k.pulo / 0.25, 0, 1) * Math.PI) * 0.35; }
+  else k.corpo.position.y = k.voa ? 0.08 + Math.sin(performance.now() / 260 + k.i) * 0.07 : 0;
+  for (const r of k.rodas) r.rotation.x += k.v * dt / k.raio;
+  for (const r of k.frente) r.rotation.y = k.giroVis * 0.4;
+  if (k.duas) {
+    k.inclina += (-k.giroVis * Math.min(1, Math.abs(k.v) / VMAX) * 0.38 - k.inclina) * (1 - Math.exp(-6 * dt));
+    k.corpo.rotation.z += k.inclina;
+  }
+  efeitosVisuais(k, dt, performance.now());
+  const c = Math.cos(k.ang), s = Math.sin(k.ang);
+  const roda = (lx, lz) => [k.pos.x + lx * c + lz * s, k.pos.z - lx * s + lz * c];
+  if (k.drift && k.carga > 0.3) {
+    const cor = k.carga > 2.2 ? 0xff8a1e : k.carga > 1 ? 0x48c6ff : 0xdddddd;
+    for (const lx of [0.9, -0.9]) {
+      const [x, z] = roda(lx, -0.9);
+      solta(x, 0.15, z, cor, (Math.random() - 0.5) * 3 - s * 2, 1.5 + Math.random() * 2, (Math.random() - 0.5) * 3 - c * 2, 0.35);
+    }
+  } else if (Math.abs(k.lat) > LARG / 2 + 0.8 && Math.abs(k.v) > 6 && Math.random() < 0.6) {
+    const [x, z] = roda((Math.random() - 0.5) * 1.8, -1);
+    solta(x, 0.2, z, 0x8a6a3a, (Math.random() - 0.5) * 2, 1 + Math.random(), (Math.random() - 0.5) * 2, 0.5);
+  }
+}
+let camAng = 0;
+const camAlvo = new THREE.Vector3(), olhar = new THREE.Vector3(), foco = new THREE.Vector3();
+function camera(dt, t) {
+  if (estado === 'escolha') {
+    const a = jog.ang + 0.7 * Math.sin(t * 0.0005);
+    foco.lerp(jog.pos, 1 - Math.exp(-6 * dt));
+    cam.position.set(foco.x + Math.sin(a) * 5.6, 2.0, foco.z + Math.cos(a) * 5.6);
+    cam.lookAt(foco.x, 0.15, foco.z);
+    if (cam.fov !== 50) { cam.fov = 50; cam.updateProjectionMatrix(); }
+    sol.position.set(foco.x + 40, 90, foco.z + 25); sol.target.position.copy(foco);
+    return;
+  }
+  if (estado === 'menu') {
+    const a = t * 0.00012;
+    cam.position.set(P[0].x + Math.sin(a) * 34, 11, P[0].z + Math.cos(a) * 34);
+    cam.lookAt(P[0].x, 2, P[0].z);
+    if (cam.fov !== 68) { cam.fov = 68; cam.updateProjectionMatrix(); }
+    sol.position.set(P[0].x + 40, 90, P[0].z + 25); sol.target.position.copy(P[0]);
+    return;
+  }
+  const k = (dbg && dbg.olha != null && kartPorI(dbg.olha)) || jog;
+  if (dbg?.cam) {
+    const c = dbg.cam, a = k.ang + (c.a || 0);
+    cam.position.set(k.pos.x - Math.sin(a) * c.d, k.g.position.y + c.h, k.pos.z - Math.cos(a) * c.d);
+    cam.lookAt(k.pos.x, k.g.position.y + (c.y ?? 0.8), k.pos.z);
+    if (cam.fov !== 50) { cam.fov = 50; cam.updateProjectionMatrix(); }
+    sol.position.set(k.pos.x + 40, 90, k.pos.z + 25); sol.target.position.set(k.pos.x, 0, k.pos.z);
+    return;
+  }
+  camAng += difAng(k.ang, camAng) * (1 - Math.exp(-5 * dt));
+  const fx = Math.sin(camAng), fz = Math.cos(camAng);
+  camAlvo.set(k.pos.x - fx * 7.5, 3.4 + k.g.position.y * 0.8, k.pos.z - fz * 7.5);
+  cam.position.lerp(camAlvo, 1 - Math.exp(-8 * dt));
+  olhar.set(k.pos.x + fx * 5, 1.2 + k.g.position.y, k.pos.z + fz * 5);
+  cam.lookAt(olhar);
+  const fov = 68 + Math.min(1, Math.abs(k.v) / VMAX) * 8 + (k.v > VMAX + 2 ? 8 : 0);
+  cam.fov += (fov - cam.fov) * (1 - Math.exp(-4 * dt)); cam.updateProjectionMatrix();
+  sol.position.set(k.pos.x + 40, 90, k.pos.z + 25); sol.target.position.set(k.pos.x, 0, k.pos.z);
+}
+const dbg = location.search.includes('debug') ? (window.kartDebug = {auto: false, x: 1, cam: null, olha: null, get karts() { return karts; }, feitos,
+  get jog() { return jog; }, get objs() { return objs; }, get caixas() { return caixas; }, get copos() { return copos; }, get modo() { return modo; }, get copa() { return copa; },
+  estado: () => estado, escolhe: (i) => escolhe(i), comeca: () => comeca(), pista: (i) => escolhePista(i), trocaPista, estadoJogo, aplicaEstado,
+  json: () => JSON.stringify(estadoJogo()), usaItem, usaEspecial, golpe, ITENS, ESPECIAIS, PILOTOS, P, T, NR, N,
+  daItem: (n, k = jog) => { k.item = n; k.roleta = 0; k.tItem = 0; }, enche: (k = jog) => { k.copos = ESP_COPOS; },
+  simula: (seg, para) => { for (let n = Math.round(seg * 30); n > 0; n--) { tSim += 1000 / 30; avanca(1 / 30, tSim); if (para?.()) break; } renderer.render(cena, cam); return estado; }}) : null;
+sorteia(); largada();
+let tAnt = 0, tSim = 0;
+function quadro(t) {
+  requestAnimationFrame(quadro);
+  const dt = Math.min(1 / 30, (t - tAnt) / 1000 || 0); tAnt = t;
+  avanca(dt, t);
+  renderer.render(cena, cam);
+}
+function avanca(dt, t) {
+  if (estado === 'contagem') {
+    const n = Math.ceil(tCont); tCont -= dt;
+    if (Math.ceil(tCont) !== n || !$('aviso').textContent) avisa(tCont > 0 ? String(Math.ceil(tCont)) : 'JÁ!', tCont > 0 ? 1.2 : 0.9);
+    if (tCont <= 0) { tCont = 0; estado = 'corrida'; }
+  } else if (estado === 'corrida' || estado === 'fimtela') {
+    for (let r = 0; r < (dbg ? dbg.x : 1); r++) {
+      if (estado === 'corrida') tCorrida += dt;
+      for (const k of karts) {
+        const auto = k.ia || k.terminou || !!(dbg && dbg.auto);
+        efeitos(k, dt);
+        passo(k, ajustaEntrada(k, auto ? pilotoIA(k, dt) : entrada(), !auto), dt);
+        if (auto) iaUsa(k);
+      }
+      colisoes(); pegaCaixas(dt); objetos(dt);
+      if (tFim > 0 && (tFim -= dt) <= 0) telaFim();
+    }
+  }
+  if (tAviso > 0 && (tAviso -= dt) <= 0) $('aviso').textContent = '';
+  if (tMsg > 0 && (tMsg -= dt) <= 0) $('hud-msg').textContent = '';
+  for (const k of karts) visual(k, dt);
+  mostraCaixas(dt, t / 1000); mostraObjs(dt, t / 1000); animaPista?.(t / 1000);
+  particulas(dt);
+  camera(dt, t);
+  hud();
+  if (estado !== 'menu' && estado !== 'escolha') minimapa(); else mg.clearRect(0, 0, MS, MS);
+}
+requestAnimationFrame(quadro);
+addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight);
+  cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+});
+</script>
+</body>
+</html>
