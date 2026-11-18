@@ -154,12 +154,12 @@ const ESC = 1.8;
 const VMAX = 31, VGRAMA = 12, VTURBO = 41, ACEL = 15, FREIO = 32, ATRITO = 5, VRE = 8;
 const PILOTOS = [
   {"nome":"Mateus","especial":"rodada","ok":true,"cor":16756736,"fator":0.95,"veic":{"tipo":"duo","desc":"myTapp DUO","cor":2762279,"eletrico":true},"tracos":{"cabelo":"curto","corCabelo":3811871}},
-  {"nome":"Ju","especial":"vacuo","ok":true,"cor":16736162,"fator":0.93,"veic":{"tipo":"p208","desc":"Peugeot 208 prata","cor":12830668},"tracos":{"cabelo":"longo","corCabelo":4862242}},
-  {"nome":"Leo","especial":"casco","ok":true,"cor":3066993,"fator":0.94,"veic":{"tipo":"march","desc":"Besourinho branco","cor":15987696},"tracos":{"cabelo":"curto","corCabelo":3811872,"barba":3023386,"pele":15120278}},
+  {"nome":"Ju","especial":"leads","ok":true,"cor":16736162,"fator":0.93,"veic":{"tipo":"p208","desc":"Peugeot 208 prata","cor":12830668},"tracos":{"cabelo":"longo","corCabelo":4862242}},
+  {"nome":"Leo","especial":"besouro","ok":true,"cor":3066993,"fator":0.94,"veic":{"tipo":"march","desc":"Besourinho branco","cor":15987696},"tracos":{"cabelo":"curto","corCabelo":3811872,"barba":3023386,"pele":15120278}},
   {"nome":"Pedro","especial":"estouro","ok":true,"cor":16731453,"fator":0.92,"veic":{"tipo":"corsa","desc":"Corsa Wind 1999 prata","cor":11843773},"tracos":{"cabelo":"cacheado","corCabelo":3088664,"barba":3088664,"pele":15251865}},
   {"nome":"João","especial":"descarga","ok":true,"cor":3842303,"fator":0.95,"veic":{"tipo":"patinete","desc":"Patinete elétrico","cor":2764083,"eletrico":true},"tracos":{"cabelo":"curto","corCabelo":2234901}},
   {"nome":"Robô","especial":"generico","cor":11894015,"fator":0.93,"veic":{"tipo":"fit","desc":"Piloto robô","cor":9080726},"tracos":{}},
-  {"nome":"Priscila","especial":"trilha","ok":true,"cor":2085296,"fator":0.94,"veic":{"tipo":"renegade","desc":"Jeep Renegade chumbo","cor":5264731},"tracos":{"cabelo":"longo","corCabelo":2038037}},
+  {"nome":"Priscila","especial":"boletos","ok":true,"cor":2085296,"fator":0.94,"veic":{"tipo":"renegade","desc":"Jeep Renegade chumbo","cor":5264731},"tracos":{"cabelo":"longo","corCabelo":2038037}},
   {"nome":"Luiz","especial":"rack","ok":true,"cor":3794687,"fator":0.92,"veic":{"tipo":"versa","desc":"Nissan Versa chumbo com rack","cor":5593439,"rack":true},"tracos":{"cabelo":"curto","corCabelo":3023129,"barba":3812128,"pele":14461572}},
   {"nome":"Nilana","especial":"bolso","ok":true,"cor":16742938,"fator":0.94,"veic":{"tipo":"kwid","desc":"Renault Kwid branco","cor":15921902},"tracos":{"cabelo":"longo","cachos":true,"corCabelo":12411952,"pele":15910566,"camiseta":15986662}},
   {"nome":"Tiago","especial":"buzina","ok":true,"cor":16773226,"fator":0.93,"veic":{"tipo":"hb20","desc":"Hyundai HB20 prata","cor":12567496},"tracos":{"cabelo":"cacheado","corCabelo":2037779,"barba":2037779,"cavanhaque":true,"pele":14264454}},
@@ -1328,12 +1328,12 @@ function localiza(k, total = false) {
 }
 function passo(k, e, dt) {
   const E = ESPECIAIS[k.esp];
-  const naGrama = Math.abs(k.lat) > LARG / 2 + 0.8 && !E?.trilha && !E?.voa;
+  const naGrama = Math.abs(k.lat) > LARG / 2 + 0.8 && !E?.voa;
   let vmax = (naGrama ? VGRAMA : VMAX) * k.fator;
   if (k.turbo > 0) { vmax = VTURBO; k.turbo -= dt; }
   if (k.torneira > 0) vmax = Math.max(vmax, VTURBO * 1.08);
   if (E?.vmax) vmax = Math.max(vmax, E.vmax);
-  if (k.efeito === 'glitter') vmax *= 0.6;
+  if (LERDO[k.efeito]) vmax *= LERDO[k.efeito];
   if (k.lento > 0) vmax *= 0.55;
   if (k.efeito === 'congela') k.v *= Math.exp(-7 * dt);
   else if (k.efeito === 'roda') k.v *= Math.exp(-1.5 * dt);
@@ -1468,24 +1468,27 @@ function golpe(k, tipo, dur, de = null) {
     return false;
   }
   k.efeito = tipo; k.tEfeito = dur; k.tImune = dur + 0.8;
-  if (tipo !== 'tonto' && tipo !== 'glitter') { k.drift = 0; k.carga = 0; k.turbo = 0; }
+  if (tipo !== 'tonto' && tipo !== 'glitter' && tipo !== 'boleto') { k.drift = 0; k.carga = 0; k.turbo = 0; }
   if (tipo === 'roda') k.v *= 0.4; else if (tipo === 'congela') k.v *= 0.25;
   if ((tipo === 'roda' || tipo === 'congela') && k.copos > 0 && !k.esp) k.copos--;
-  if (k === jog) recado({roda: 'Rodou!', congela: 'Congelado!', derrapa: 'Escorregou!', tonto: 'Tonto!', glitter: 'Glitter na cara!'}[tipo] || '', 1.3);
+  if (k === jog) recado({roda: 'Rodou!', congela: 'Congelado!', derrapa: 'Escorregou!', tonto: 'Tonto!', glitter: 'Glitter na cara!', boleto: 'Boleto na cara!', frio: 'Atendendo lead frio!'}[tipo] || '', 1.3);
   else if (de === jog) recado(`Acertou ${k.nome}!`, 1.2);
   return true;
 }
 const OBJ = {
   barril: {r: 1.5, vida: 7, anda: 44, golpe: ['roda', 1.1], some: true},
   carga: {r: 1.4, vida: 6, anda: 47, golpe: ['roda', 1.0], some: true},
+  boleto: {r: 1.1, vida: 3, anda: 50, golpe: ['boleto', 1.4], some: true, cobra: 2, cores: [0xffffff, 0xfff1b8, 0x2b2b2b]},
   gelo: {r: 1.6, vida: 4, mira: 62, golpe: ['congela', 1.5], some: true},
-  glitter: {r: 1.7, vida: 4.5, mira: 52, golpe: ['glitter', 2.6], some: true, area: 7},
+  lead: {r: 1.3, vida: 4.5, mira: 48, golpe: ['frio', 1.2], some: true, cores: [0xbfefff, 0xffffff, 0x8fa3b8]},
+  glitter: {r: 1.7, vida: 4.5, mira: 52, golpe: ['glitter', 2.6], some: true, area: 9},
   espuma: {r: 2.1, vida: 25, chao: true, golpe: ['derrapa', 0.9], some: true},
   banqueta: {r: 1.2, vida: 15, chao: true, golpe: ['roda', 1.0], some: true},
   escada: {r: 4.6, vida: 14, chao: true, larga: true, golpe: ['roda', 0.9], some: true},
   esporos: {r: 5, vida: 6, nuvem: true, golpe: ['tonto', 2.2]},
   fumaca: {r: 5.5, vida: 6, nuvem: true},
 };
+const LERDO = {glitter: 0.6, boleto: 0.6, frio: 0.5};
 function novoObj(tipo, k, o = {}) {
   const ob = {id: proxId++, tipo, s: DIST[k.idx], lat: k.lat, x: k.pos.x, z: k.pos.z, vx: 0, vz: 0, v: 0, t: 0, dono: k.i, alvo: -1, ...o};
   if (!OBJ[tipo].mira) Object.assign(ob, noTrilho(idxDe(ob.s), ob.lat));
@@ -1511,7 +1514,7 @@ function objetos(dt) {
     if (o.t > D.vida) { o.fim = true; continue; }
     for (const k of karts) {
       if (k.i === o.dono && (o.t < 0.5 || D.nuvem)) continue;
-      if (fantasma(k) || (D.chao && k.esp === 'trilha')) continue;
+      if (fantasma(k)) continue;
       const toca = D.larga ? Math.abs(naFrente(o.s, k)) < 1.2 && Math.abs(k.lat - o.lat) < D.r
         : (k.pos.x - o.x) ** 2 + (k.pos.z - o.z) ** 2 < (D.r + 0.7) ** 2;
       if (!toca) continue;
@@ -1521,10 +1524,10 @@ function objetos(dt) {
       if (D.area) {
         for (const v of karts) if (v.i !== o.dono && (v.pos.x - o.x) ** 2 + (v.pos.z - o.z) ** 2 < D.area * D.area) golpe(v, ...D.golpe, dono);
         estoura(o.x, 1.2, o.z, [0xff5fc8, 0xffffff, 0xffd1ef, 0xffe14a], 70, 9);
-      } else golpe(k, ...D.golpe, dono);
+      } else if (golpe(k, ...D.golpe, dono) && D.cobra && dono) cobra(dono, k, D.cobra);
       if (D.some) {
         o.fim = true;
-        estoura(o.x, 0.8, o.z, o.tipo === 'gelo' ? [0xcff4ff, 0xffffff] : o.tipo === 'espuma' ? [0xfffaf0, 0xffd27a] : [0xc9cdd5, 0x8a6a3a, 0xffffff], 24, 6);
+        estoura(o.x, 0.8, o.z, D.cores || (o.tipo === 'gelo' ? [0xcff4ff, 0xffffff] : o.tipo === 'espuma' ? [0xfffaf0, 0xffd27a] : [0xc9cdd5, 0x8a6a3a, 0xffffff]), 24, 6);
         break;
       }
     }
@@ -1566,19 +1569,24 @@ function pegaCaixas(dt) {
   }
 }
 const ESPECIAIS = {
-  rodada: {nome: 'Rodada de chope', dur: 2.5, bom: (k) => !!naMiraFrente(k, 16, 3),
+  rodada: {nome: 'Rodada de chope', dur: 2.5, bom: (k) => !!naMiraFrente(k, 20, 3.5),
     tique: (k) => {
       const fx = Math.sin(k.ang), fz = Math.cos(k.ang);
       for (const o of karts) {
         if (o === k) continue;
         const dx = o.pos.x - k.pos.x, dz = o.pos.z - k.pos.z, f = dx * fx + dz * fz, l = Math.abs(dx * fz - dz * fx);
-        if (f > 0.5 && f < 16 && l < 1.5 + f * 0.22) golpe(o, 'derrapa', 1.0, k);
+        if (f > 0.5 && f < 20 && l < 1.5 + f * 0.22) golpe(o, 'derrapa', 1.2, k);
       }
     }},
-  vacuo: {nome: 'Vácuo', dur: 3, vmax: VTURBO * 1.05, mira: true, bom: (k) => !!frenteDe(k, 70),
-    ativa: (k) => { k.espAlvo = frenteDe(k, 90)?.i ?? -1; },
-    tique: (k) => { const a = kartPorI(k.espAlvo); if (a && Math.hypot(a.pos.x - k.pos.x, a.pos.z - k.pos.z) < 4.5) { k.turbo = 1.6; k.tEsp = 0; } }},
-  casco: {nome: 'Casco de besouro', dur: 3.5, vmax: VMAX * 1.12, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 25) || ameacado(k)},
+  leads: {nome: 'Leads frios', dur: 0.6, bom: (k) => !!frenteDe(k, 90),
+    ativa: (k) => {
+      const alvos = karts.filter((o) => o !== k && !o.terminou && sTot(o) - sTot(k) > 1 && sTot(o) - sTot(k) < 120).sort((a, b) => sTot(a) - sTot(b));
+      [0, -0.4, 0.4].forEach((a, n) => {
+        const l = voa('lead', k, alvos[n] || null), c = Math.cos(a), s = Math.sin(a);
+        [l.vx, l.vz] = [l.vx * c + l.vz * s, l.vz * c - l.vx * s];
+      });
+    }},
+  besouro: {nome: 'Besouro blindado', dur: 3.5, vmax: VMAX * 1.12, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 25) || ameacado(k)},
   estouro: {nome: 'Escapamento estourado', dur: 0.6, bom: (k) => !!atrasDe(k, 12),
     ativa: (k) => {
       for (const o of karts) { const d = sTot(k) - sTot(o); if (o !== k && d > -1 && d < 13 && Math.hypot(o.pos.x - k.pos.x, o.pos.z - k.pos.z) < 15) golpe(o, 'roda', 1.0, k); }
@@ -1592,7 +1600,11 @@ const ESPECIAIS = {
     }},
   bancos: {nome: 'Banquetas do bar', dur: 0.6, bom: (k) => !!atrasDe(k, 25),
     ativa: (k) => [-3, 0, 3].forEach((l, n) => novoObj('banqueta', k, {s: atras(k, 4 + n * 4), lat: clamp(k.lat + l, -LARG / 2, LARG / 2)}))},
-  trilha: {nome: 'Modo trilha', dur: 4, vmax: VTURBO * 0.9, trilha: true, bom: () => true},
+  boletos: {nome: 'Chuva de boletos', dur: 0.6, bom: (k) => !!naMiraFrente(k, 45, 5),
+    ativa: (k) => {
+      [-4, -2, 0, 2, 4].forEach((l, n) => novoObj('boleto', k, {s: adiante(k, 3), lat: clamp(k.lat + l, -LARG / 2, LARG / 2), v: Math.max(OBJ.boleto.anda, k.v + 16) + (n % 2) * 3}));
+      estoura(k.pos.x + Math.sin(k.ang) * 2, 1.4, k.pos.z + Math.cos(k.ang) * 2, [0xffffff, 0xfff1b8], 30, 6);
+    }},
   rack: {nome: 'Carga do rack', dur: 0.6, bom: (k) => !!frenteDe(k, 45),
     ativa: (k) => [-2.5, 0, 2.5].forEach((l, n) => novoObj('carga', k, {s: adiante(k, 3), lat: clamp(k.lat + l, -LARG / 2, LARG / 2), v: Math.max(OBJ.carga.anda, k.v + 12) + n * 2}))},
   bolso: {nome: 'Kwid de bolso', dur: 4, vmax: VMAX * 1.08, blinda: true, bom: () => true},
@@ -1614,9 +1626,17 @@ const ESPECIAIS = {
   empurra: {nome: 'Carrinho desgovernado', dur: 3.5, vmax: VTURBO * 1.08, mira: true, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 50),
     ativa: (k) => { k.espAlvo = frenteDe(k, 80)?.i ?? -1; }},
   glitter: {nome: 'Bomba de glitter', dur: 0.6, bom: (k) => !!frenteDe(k, 90), ativa: (k) => voa('glitter', k, frenteDe(k, 150))},
-  ignicao: {nome: 'Ignição do foguete', dur: 3, vmax: VTURBO * 1.3, ram: true, blinda: true, bom: () => true},
+  ignicao: {nome: 'Ignição do foguete', dur: 3, vmax: VTURBO * 1.3, ram: true, bom: () => true},
   generico: {nome: 'Turbo de robô', dur: 3, vmax: VTURBO, bom: () => true},
 };
+function cobra(dono, k, n) {
+  const q = Math.min(n, k.copos);
+  if (!q) return;
+  k.copos -= q;
+  dono.copos = Math.min(ESP_COPOS, dono.copos + q);
+  const tx = `${q} copinho${q > 1 ? 's' : ''}`;
+  if (dono === jog) recado(`Cobrou ${tx} de ${k.nome}!`, 1.3); else if (k === jog) recado(`Boleto na cara! Pagou ${tx}`, 1.3);
+}
 function usaItem(k) {
   if (!k.item || k.roleta > 0 || k.efeito === 'roda' || k.efeito === 'congela') return false;
   const it = k.item; k.item = ''; k.tItem = 0;
@@ -1699,7 +1719,7 @@ function alvoIA(k) {
   let melhor = null, md = 1e9;
   for (const o of objs) {
     const D = OBJ[o.tipo];
-    if (!(D.chao || D.nuvem) || (D.chao && k.esp === 'trilha')) continue;
+    if (!(D.chao || D.nuvem)) continue;
     const d = naFrente(o.s, k), folga = D.r + 1.8;
     if (d < 2 || d > 26 || Math.abs(o.lat - k.faixa) > folga || d > md) continue;
     md = d;
@@ -1774,6 +1794,22 @@ const MODELO = {};
   MODELO.carga = novo((g) => {
     caixa(g, 1.0, 1.0, 1.0, M(0xb07a3e)); caixa(g, 1.04, 1.04, 0.14, M(0x3a2a1a)); caixa(g, 0.14, 1.04, 1.04, M(0x3a2a1a));
   });
+  MODELO.boleto = novo((g) => {
+    const t = tex(128, 160, (c, w, h) => {
+      c.fillStyle = '#fbfbf7'; c.fillRect(0, 0, w, h); c.fillStyle = '#ffd84a'; c.fillRect(0, 0, w, 26);
+      c.fillStyle = '#222'; c.textAlign = 'center'; c.font = '900 18px system-ui, sans-serif'; c.fillText('BOLETO', w / 2, 19);
+      c.font = '700 15px system-ui, sans-serif'; c.fillText('R$ 1.999,90', w / 2, 50);
+      for (let x = 10; x < w - 10; x += 3) if ((x * 7) % 5 < 3) c.fillRect(x, 114, x % 4 ? 1 : 2, 34);
+      c.translate(w / 2, 82); c.rotate(-0.3); c.strokeStyle = c.fillStyle = '#d21f2b'; c.lineWidth = 3; c.strokeRect(-42, -14, 84, 26);
+      c.font = '900 16px system-ui, sans-serif'; c.fillText('VENCIDO', 0, 5);
+    });
+    peca(g, new THREE.PlaneGeometry(1.6, 2.0), new THREE.MeshBasicMaterial({map: t, side: THREE.DoubleSide}));
+  });
+  MODELO.lead = novo((g) => {
+    caixa(g, 0.9, 1.3, 0.9, M(0xc9d6e3)); caixa(g, 1.0, 0.1, 1.0, M(0x6d7f93), 0, 0.7, 0);
+    for (const z of [-0.46, 0.46]) for (const y of [-0.4, 0, 0.4]) for (const x of [-0.22, 0.22]) caixa(g, 0.2, 0.18, 0.02, M(0x8fe3ff, 'luz'), x, y, z);
+    peca(g, new THREE.OctahedronGeometry(0.28), M(0xdff8ff, 'luz'), 0, 1.0, 0);
+  });
   MODELO.gelo = novo((g) => { peca(g, new THREE.OctahedronGeometry(0.75), vidro(0xbfefff, 0.7)); peca(g, new THREE.OctahedronGeometry(0.38), M(0xffffff, 'luz')); });
   MODELO.glitter = novo((g) => {
     peca(g, new THREE.IcosahedronGeometry(0.55), M(0xff5fc8, 'luz'));
@@ -1805,7 +1841,7 @@ const MODELO = {};
     peca(g, new THREE.CylinderGeometry(0.07, 0.07, 0.7, 6), M(0xffb000, 'luz'), 0, 0.37, 0.62);
   });
 }
-const OBJ_Y = {barril: 0.55, carga: 0.5, gelo: 1.3, glitter: 1.3, espuma: 0.03, banqueta: 0, escada: 0, esporos: 0.6, fumaca: 0.8};
+const OBJ_Y = {barril: 0.55, carga: 0.5, boleto: 1.3, gelo: 1.3, lead: 1.3, glitter: 1.3, espuma: 0.03, banqueta: 0, escada: 0, esporos: 0.6, fumaca: 0.8};
 const malhaObj = new Map();
 function mostraObjs(dt, t) {
   for (const o of objs) {
@@ -1813,7 +1849,9 @@ function mostraObjs(dt, t) {
     if (!m) { m = MODELO[o.tipo].clone(); m.rotation.order = 'YXZ'; cena.add(m); malhaObj.set(o.id, m); }
     const D = OBJ[o.tipo], j = idxDe(o.s), rumo = Math.atan2(T[j].x, T[j].z);
     m.position.set(o.x, OBJ_Y[o.tipo], o.z);
-    if (D.anda) m.rotation.set(o.s / 0.55, rumo, 0);
+    if (o.tipo === 'boleto') m.rotation.set(Math.sin(t * 11 + o.id) * 0.5, rumo + Math.sin(t * 7 + o.id) * 0.5, Math.sin(t * 9 + o.id * 2) * 0.35);
+    else if (D.anda) m.rotation.set(o.s / 0.55, rumo, 0);
+    else if (o.tipo === 'lead') { m.rotation.set(0.2, t * 5, 0); m.position.y += Math.sin(t * 6 + o.id) * 0.15; }
     else if (D.mira) { m.rotation.set(t * 4, t * 6, 0); m.position.y += Math.sin(t * 9) * 0.1; }
     else m.rotation.set(0, rumo, 0);
     const resta = D.vida - o.t;
@@ -1822,7 +1860,7 @@ function mostraObjs(dt, t) {
     if (o.tipo === 'esporos' && Math.random() < 0.8) solta(o.x + R() * 9, 0.4 + Math.random() * 2.5, o.z + R() * 9, Math.random() < 0.5 ? 0xb6ff6a : 0x6fd84a, R() * 0.8, 0.6, R() * 0.8, 1, -0.3);
     if (o.tipo === 'fumaca' && Math.random() < 0.9) solta(o.x + R() * 9, 0.4 + Math.random() * 2, o.z + R() * 9, Math.random() < 0.5 ? 0xa0a0a0 : 0x6a6a6a, R() * 0.6, 1.2, R() * 0.6, 1.2, -0.4);
     if (o.tipo === 'glitter') solta(o.x, 1.3, o.z, Math.random() < 0.5 ? 0xff5fc8 : 0xffffff, R() * 2, R() * 2, R() * 2, 0.5, 0);
-    if (o.tipo === 'gelo') solta(o.x, 1.3, o.z, 0xe8fbff, R() * 2, R() * 2, R() * 2, 0.4, 0);
+    if (o.tipo === 'gelo' || o.tipo === 'lead') solta(o.x, 1.3, o.z, 0xe8fbff, R() * 2, R() * 2, R() * 2, 0.4, 0);
   }
   if (malhaObj.size > objs.length || objs.some((o) => !malhaObj.has(o.id))) {
     const vivos = new Set(objs.map((o) => o.id));
@@ -1841,7 +1879,7 @@ function fxDe(k) {
   fx.bolha = new THREE.Group(); fx.bolha.add(new THREE.Mesh(gBolha, mBolha), new THREE.Mesh(gBolhaFio, mBolhaFio));
   fx.bolha.position.y = alto * 0.5 + 0.2; fx.bolha.scale.setScalar(Math.max(1, (alto + 0.8) / 2.4));
   fx.gelo = new THREE.Mesh(gGeloFx, mGeloFx); fx.gelo.scale.set(1, Math.max(1, (alto + 0.5) / 2.3), 1); fx.gelo.position.y = 1.15 * fx.gelo.scale.y;
-  fx.casco = new THREE.Mesh(gCasco, mCascoFx); fx.casco.scale.set(1.05, Math.max(0.8, alto / 1.8), 1.3); fx.casco.position.y = 0.2;
+  fx.besouro = new THREE.Mesh(gCasco, mCascoFx); fx.besouro.scale.set(1.05, Math.max(0.8, alto / 1.8), 1.3); fx.besouro.position.y = 0.2;
   fx.torneira = MODELO.torneira.clone(); fx.torneira.position.y = alto - 0.1;
   for (const o of Object.values(fx)) { o.visible = false; k.g.add(o); }
   return (k.fx = fx);
@@ -1854,9 +1892,9 @@ function efeitosVisuais(k, dt, t) {
   k.g.position.y = y;
   const esc = k.esp === 'bolso' ? 0.45 : 1;
   if (Math.abs(k.g.scale.x - esc) > 0.002) k.g.scale.setScalar(k.g.scale.x + (esc - k.g.scale.x) * (1 - Math.exp(-8 * dt)));
-  if (k.escudo || k.efeito === 'congela' || k.torneira > 0 || k.esp === 'casco' || k.fx) {
+  if (k.escudo || k.efeito === 'congela' || k.torneira > 0 || k.esp === 'besouro' || k.fx) {
     const fx = fxDe(k);
-    fx.bolha.visible = k.escudo; fx.gelo.visible = k.efeito === 'congela'; fx.torneira.visible = k.torneira > 0; fx.casco.visible = k.esp === 'casco';
+    fx.bolha.visible = k.escudo; fx.gelo.visible = k.efeito === 'congela'; fx.torneira.visible = k.torneira > 0; fx.besouro.visible = k.esp === 'besouro';
     if (k.escudo) fx.bolha.rotation.y += dt * 1.2;
   }
   const forte = k.turbo > 0 || k.torneira > 0 || (E?.vmax || 0) > VMAX;
@@ -1865,16 +1903,16 @@ function efeitosVisuais(k, dt, t) {
   if (k.efeito === 'roda' && Math.random() < 0.6) solta(x, alto + 0.9, z, 0xffe14a, R() * 4, 1.5, R() * 4, 0.45, 3);
   if (k.efeito === 'tonto') for (let n = 0; n < 2; n++) { const a = t * 0.009 + n * Math.PI; solta(x + Math.cos(a) * 1.1, alto + 1.1, z + Math.sin(a) * 1.1, 0xb6ff6a, 0, 0.2, 0, 0.25, 0); }
   if (k.efeito === 'glitter') for (let n = 0; n < 3; n++) solta(x + R() * 3, 0.3 + Math.random() * alto, z + R() * 3, [0xff5fc8, 0xffffff, 0xffe14a][n], R(), 0.8, R(), 0.6, 0.5);
+  if (k.efeito === 'boleto') for (let n = 0; n < 2; n++) solta(x + R() * 2.6, alto * 0.6 + Math.random() * 1.4, z + R() * 2.6, n ? 0xfff1b8 : 0xffffff, R() * 3, 1.2, R() * 3, 0.5, 2);
+  if (k.efeito === 'frio' && Math.random() < 0.7) solta(x + R() * 2.6, alto + 1.4, z + R() * 2.6, 0xd8f6ff, R(), -1, R(), 0.8, 0.5);
   if (k.efeito === 'derrapa') solta(x + R() * 2, 0.2, z + R() * 2, 0xfffaf0, R() * 3, 1.5, R() * 3, 0.4);
   if (k.efeito === 'congela' && Math.random() < 0.5) solta(x + R() * 2.6, alto + 0.8, z + R() * 3, 0xe8fbff, R(), 0.4, R(), 0.7, 1);
   if (k.torneira > 0) solta(x + s * 0.6, y + alto + 0.3, z + c * 0.6, 0xffb000, R(), -1, R(), 0.5, 9);
   if (!E) return;
-  if (k.esp === 'rodada') for (let n = 0; n < 5; n++) solta(x + s * 1.4, alto * 0.75, z + c * 1.4, n % 2 ? 0xffb000 : 0xfff4d6, s * 20 + R() * 4, 1 + Math.random() * 2.5, c * 20 + R() * 4, 0.55, 6);
-  if (k.esp === 'vacuo') for (let n = 0; n < 2; n++) solta(x + R() * 3, 0.4 + Math.random() * 1.6, z + R() * 3, 0xffffff, -s * 26, 0, -c * 26, 0.22, 0);
-  if (k.esp === 'trilha') for (let n = 0; n < 2; n++) solta(x - s * 1.3 + R(), 0.3, z - c * 1.3 + R(), 0x9a7a4a, -s * 4 + R() * 3, 2 + Math.random() * 2, -c * 4 + R() * 3, 0.7, 4);
+  if (k.esp === 'rodada') for (let n = 0; n < 5; n++) solta(x + s * 1.4, alto * 0.75, z + c * 1.4, n % 2 ? 0xffb000 : 0xfff4d6, s * 24 + R() * 4, 1 + Math.random() * 2.5, c * 24 + R() * 4, 0.6, 6);
   if (k.esp === 'orbital') solta(x + R() * 0.6, y + 0.2, z + R() * 0.6, Math.random() < 0.5 ? 0x6fd8ff : 0xffffff, R() * 2, -7, R() * 2, 0.35, 0);
   if (k.esp === 'ignicao') for (let n = 0; n < 3; n++) solta(x - s * 2.2, 0.7, z - c * 2.2, n % 2 ? 0xff7a00 : 0xffd24a, -s * 10 + R() * 4, Math.random() * 3, -c * 10 + R() * 4, 0.4, -2);
-  if (k.esp === 'empurra' || k.esp === 'casco') if (Math.random() < 0.4) solta(x + s * 1.6, 0.4, z + c * 1.6, 0xfff2b0, R() * 5, 2, R() * 5, 0.3, 6);
+  if (k.esp === 'empurra' || k.esp === 'besouro') if (Math.random() < 0.4) solta(x + s * 1.6, 0.4, z + c * 1.6, 0xfff2b0, R() * 5, 2, R() * 5, 0.3, 6);
 }
 const CAMPOS = ['i', 'ang', 'v', 'idx', 'lat', 'volta', 'metade', 'drift', 'carga', 'turbo', 'pulo', 'terminou', 'chegada', 'tempo', 'fator',
   'faixa', 'faixaAlvo', 'faixaT', 'efeito', 'tEfeito', 'tImune', 'escudo', 'torneira', 'lento', 'esp', 'tEsp', 'espAlvo', 'copos', 'tCheio',
