@@ -83,6 +83,9 @@
   .tela button.pista.sel{border-color:#ffb000;background:rgba(255,176,0,.25)}
   .tela button.pista:active{transform:none;box-shadow:none}
   #t-item{right:104px;bottom:112px} #t-esp{right:192px;bottom:62px}
+  #som{position:fixed;top:94px;left:14px;z-index:30;width:36px;height:36px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.5);
+    background:rgba(0,0,0,.35);color:#fff;font-size:17px;line-height:1;cursor:pointer;opacity:.75;touch-action:manipulation}
+  #som:hover,#som:focus-visible{opacity:1}
 </style>
 <script type="importmap">{"imports":{"three":"./three-0.160.0.module.min.js","three/addons/utils/BufferGeometryUtils.js":"./three-0.160.0.BufferGeometryUtils.js"}}</script>
 </head>
@@ -100,6 +103,7 @@
 <div id="brilho"></div>
 <canvas id="mini"></canvas>
 <div id="aviso"></div>
+<button id="som" type="button" aria-label="Som (M)">🔊</button>
 
 <div id="toque" class="oculto">
   <button id="t-esq" data-k="esq">◀</button><button id="t-dir" data-k="dir">▶</button>
@@ -116,7 +120,7 @@
     <b>Espaço</b>: drift. Segure numa curva até sair faísca azul (ou laranja, mais forte) e solte para ganhar turbo.<br>
     Passe pelos engradados da myTapp para ganhar um item e use com <b>X</b>.
     Pegue copinhos de chope para encher a barra e solte o especial do seu veículo com <b>C</b>.<br>
-    <b>Esc</b>: pausa · 3 voltas contra a galera da myTapp, em 4 pistas
+    <b>Esc</b>: pausa · <b>M</b>: som · 3 voltas contra a galera da myTapp, em 4 pistas
   </div>
   <button id="b-correr">Escolher piloto ▶</button>
   <p class="rec" id="menu-rec"></p>
@@ -1288,9 +1292,9 @@ function fazKart(def) {
 montaPista(PISTAS[pistaAtual]);
 const zeraKart = () => ({efeito: '', tEfeito: 0, tImune: 0, escudo: false, torneira: 0, lento: 0, esp: '', tEsp: 0, espAlvo: -1, copos: 0, tCheio: 0,
   item: '', roleta: 0, itemVem: '', tItem: 0});
-const NA_PISTA = 12, feitos = [];
+const NA_PISTA = 12, feitos = [], extras = {};
 function kartDe(i) {
-  if (!feitos[i]) { const def = PILOTOS[i]; feitos[i] = {
+  if (!feitos[i]) { const def = PILOTOS[i] || extras[i]; feitos[i] = {
     ...def, i, ia: true, base: def.fator || 1, fator: def.fator || 1, ...fazKart(def),
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), ang: 0, v: 0, idx: 0, lat: 0,
     volta: 0, metade: true, drift: 0, carga: 0, turbo: 0, pulo: 0, desliza: 0, giroVis: 0, inclina: 0,
@@ -1373,25 +1377,27 @@ function colisoes() {
   for (let i = 0; i < karts.length; i++) for (let j = i + 1; j < karts.length; j++) {
     const a = karts[i], b = karts[j], dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z, d2 = dx * dx + dz * dz;
     if (d2 > 2.3 * 2.3 || d2 < 1e-6 || fantasma(a) || fantasma(b)) continue;
+    const la = !online || online.meu(a), lb = !online || online.meu(b);
+    if (!la && !lb) continue;
     const d = Math.sqrt(d2), nx = dx / d, nz = dz / d, emp = (2.3 - d) / 2;
     const ra = ariete(a), rb = ariete(b);
-    if (ra && !rb) bate(a, b, nx, nz); else if (rb && !ra) bate(b, a, -nx, -nz);
-    a.pos.x -= nx * emp; a.pos.z -= nz * emp; b.pos.x += nx * emp; b.pos.z += nz * emp;
+    if (ra && !rb) { if (lb) bate(a, b, nx, nz); } else if (rb && !ra) { if (la) bate(b, a, -nx, -nz); }
+    if (la) { a.pos.x -= nx * emp; a.pos.z -= nz * emp; }
+    if (lb) { b.pos.x += nx * emp; b.pos.z += nz * emp; }
     const va = a.vel.x * nx + a.vel.z * nz, vb = b.vel.x * nx + b.vel.z * nz;
     if (va > vb) {
       const imp = (va - vb) * 0.6;
-      a.vel.x -= nx * imp; a.vel.z -= nz * imp; b.vel.x += nx * imp; b.vel.z += nz * imp;
-      a.v *= 0.96; b.v *= 0.96;
+      if (la) { a.vel.x -= nx * imp; a.vel.z -= nz * imp; a.v *= 0.96; }
+      if (lb) { b.vel.x += nx * imp; b.vel.z += nz * imp; b.v *= 0.96; }
     }
   }
 }
 function bate(f, v, nx, nz) {
-  if (!golpe(v, 'roda', 1.1, f)) return;
   const forca = f.esp === 'empurra' ? 22 : 12;
-  v.vel.x += nx * forca; v.vel.z += nz * forca;
-  if (f.esp === 'empurra') {
-    const l = NR[v.idx], s = v.lat >= f.lat ? 1 : -1; v.vel.x += l.x * s * 16; v.vel.z += l.z * s * 16; f.tEsp = Math.min(f.tEsp, 0.3);
-  }
+  let ex = nx * forca, ez = nz * forca;
+  if (f.esp === 'empurra') { const l = NR[v.idx], s = v.lat >= f.lat ? 1 : -1; ex += l.x * s * 16; ez += l.z * s * 16; }
+  if (!golpe(v, 'roda', 1.1, f, [ex, ez, 0])) return;
+  if (f.esp === 'empurra') f.tEsp = Math.min(f.tEsp, 0.3);
   estoura((f.pos.x + v.pos.x) / 2, 0.8, (f.pos.z + v.pos.z) / 2, [0xfff2b0, 0xffb000, 0xffffff], 24, 8);
 }
 function pilotoIA(k, dt) {
@@ -1406,7 +1412,7 @@ function pilotoIA(k, dt) {
   const curv = 1 - T[k.idx].dot(T[(k.idx + 40) % N]);
   const vAlvo = VMAX * k.fator * (1 - Math.min(0.45, curv * 1.6));
   if (k.ia) {
-    const dif = progresso(jog) - progresso(k);
+    const dif = progresso(online ? online.perto(k) : jog) - progresso(k);
     k.fator = k.base + clamp(dif * 0.35, -0.08, 0.09);
   }
   return {acel: k.v < vAlvo, freio: k.v > vAlvo + 4, giro, drift: false};
@@ -1425,6 +1431,7 @@ const FILAS = [0.14, 0.4, 0.63, 0.87], LATS = [-5.4, -1.8, 1.8, 5.4], VOLTA_CAIX
 const GRUPOS_COPO = [0.05, 0.22, 0.31, 0.5, 0.56, 0.73, 0.79, 0.95], ESP_COPOS = 6, VOLTA_COPO = 7, R_COPO = 1.7;
 const PARADO = {acel: false, freio: false, giro: 0, drift: false};
 let caixas = [], copos = [], objs = [], proxId = 1, tMsg = 0;
+let online = null;
 const ordem = () => [...karts].sort((a, b) => progresso(b) - progresso(a));
 const kartPorI = (i) => karts.find((k) => k.i === i) || null;
 const idxDe = (s) => ((Math.round(s / COMP * N) % N) + N) % N;
@@ -1460,8 +1467,9 @@ function sorteiaItem(k) {
   for (let n = 0; n < pesos.length; n++) if ((r -= pesos[n]) <= 0) return LISTA_ITENS[n];
   return 'turbo';
 }
-function golpe(k, tipo, dur, de = null) {
+function golpe(k, tipo, dur, de = null, emp = null) {
   if (k.tImune > 0 || blindado(k)) return false;
+  if (online && !online.meu(k)) return online.golpe(k, tipo, dur, de, emp);
   if (k.escudo) {
     k.escudo = false; k.tImune = 0.7; estoura(k.pos.x, 1.2, k.pos.z, [0x7fe8ff, 0xffffff], 30, 7);
     if (k === jog) recado('O Escudo HUG segurou!', 1.3);
@@ -1471,8 +1479,10 @@ function golpe(k, tipo, dur, de = null) {
   if (tipo !== 'tonto' && tipo !== 'glitter' && tipo !== 'boleto') { k.drift = 0; k.carga = 0; k.turbo = 0; }
   if (tipo === 'roda') k.v *= 0.4; else if (tipo === 'congela') k.v *= 0.25;
   if ((tipo === 'roda' || tipo === 'congela') && k.copos > 0 && !k.esp) k.copos--;
+  if (emp) { k.vel.x += emp[0]; k.vel.z += emp[1]; if (emp[2]) k.v *= emp[2]; }
   if (k === jog) recado({roda: 'Rodou!', congela: 'Congelado!', derrapa: 'Escorregou!', tonto: 'Tonto!', glitter: 'Glitter na cara!', boleto: 'Boleto na cara!', frio: 'Atendendo lead frio!'}[tipo] || '', 1.3);
   else if (de === jog) recado(`Acertou ${k.nome}!`, 1.2);
+  online?.acertou(k, de);
   return true;
 }
 const OBJ = {
@@ -1490,13 +1500,13 @@ const OBJ = {
 };
 const LERDO = {glitter: 0.6, boleto: 0.6, frio: 0.5};
 function novoObj(tipo, k, o = {}) {
-  const ob = {id: proxId++, tipo, s: DIST[k.idx], lat: k.lat, x: k.pos.x, z: k.pos.z, vx: 0, vz: 0, v: 0, t: 0, dono: k.i, alvo: -1, ...o};
+  const ob = {id: online ? online.idObj() : proxId++, tipo, s: DIST[k.idx], lat: k.lat, x: k.pos.x, z: k.pos.z, vx: 0, vz: 0, v: 0, t: 0, dono: k.i, alvo: -1, ...o};
   if (!OBJ[tipo].mira) Object.assign(ob, noTrilho(idxDe(ob.s), ob.lat));
-  objs.push(ob); return ob;
+  objs.push(ob); online?.solta(ob); return ob;
 }
-function voa(tipo, k, alvo) {
+function voa(tipo, k, alvo, giro = 0) {
   const fx = Math.sin(k.ang), fz = Math.cos(k.ang), vel = OBJ[tipo].mira;
-  return novoObj(tipo, k, {x: k.pos.x + fx * 2.5, z: k.pos.z + fz * 2.5, vx: fx * vel, vz: fz * vel, alvo: alvo ? alvo.i : -1});
+  return novoObj(tipo, k, {x: k.pos.x + fx * 2.5, z: k.pos.z + fz * 2.5, vx: Math.sin(k.ang + giro) * vel, vz: Math.cos(k.ang + giro) * vel, alvo: alvo ? alvo.i : -1});
 }
 function objetos(dt) {
   for (const o of objs) {
@@ -1513,6 +1523,7 @@ function objetos(dt) {
     }
     if (o.t > D.vida) { o.fim = true; continue; }
     for (const k of karts) {
+      if (online && !online.meu(k)) continue;
       if (k.i === o.dono && (o.t < 0.5 || D.nuvem)) continue;
       if (fantasma(k)) continue;
       const toca = D.larga ? Math.abs(naFrente(o.s, k)) < 1.2 && Math.abs(k.lat - o.lat) < D.r
@@ -1526,7 +1537,7 @@ function objetos(dt) {
         estoura(o.x, 1.2, o.z, [0xff5fc8, 0xffffff, 0xffd1ef, 0xffe14a], 70, 9);
       } else if (golpe(k, ...D.golpe, dono) && D.cobra && dono) cobra(dono, k, D.cobra);
       if (D.some) {
-        o.fim = true;
+        o.fim = true; online?.tira(o);
         estoura(o.x, 0.8, o.z, D.cores || (o.tipo === 'gelo' ? [0xcff4ff, 0xffffff] : o.tipo === 'espuma' ? [0xfffaf0, 0xffd27a] : [0xc9cdd5, 0x8a6a3a, 0xffffff]), 24, 6);
         break;
       }
@@ -1549,8 +1560,8 @@ function pegaCaixas(dt) {
   for (const c of caixas) {
     if (c.t > 0) { c.t = Math.max(0, c.t - dt); continue; }
     for (const k of karts) {
-      if (k.esp === 'orbital' || (k.pos.x - c.x) ** 2 + (k.pos.z - c.z) ** 2 > R_CAIXA * R_CAIXA) continue;
-      c.t = VOLTA_CAIXA; estoura(c.x, 1, c.z, [0xff7a00, 0xffd84a, 0xffffff], 18, 6);
+      if (k.esp === 'orbital' || (k.pos.x - c.x) ** 2 + (k.pos.z - c.z) ** 2 > R_CAIXA * R_CAIXA || (online && !online.meu(k))) continue;
+      c.t = VOLTA_CAIXA; online?.pega('caixa', caixas.indexOf(c)); estoura(c.x, 1, c.z, [0xff7a00, 0xffd84a, 0xffffff], 18, 6);
       if (!k.item && !k.roleta) { k.roleta = k === jog ? 1.1 : 0.6; k.itemVem = sorteiaItem(k); }
       break;
     }
@@ -1558,8 +1569,8 @@ function pegaCaixas(dt) {
   for (const c of copos) {
     if (c.t > 0) { c.t = Math.max(0, c.t - dt); continue; }
     for (const k of karts) {
-      if (k.esp === 'orbital' || (k.pos.x - c.x) ** 2 + (k.pos.z - c.z) ** 2 > R_COPO * R_COPO) continue;
-      c.t = VOLTA_COPO; estoura(c.x, 0.9, c.z, [0xffb000, 0xfff4d6], 8, 4);
+      if (k.esp === 'orbital' || (k.pos.x - c.x) ** 2 + (k.pos.z - c.z) ** 2 > R_COPO * R_COPO || (online && !online.meu(k))) continue;
+      c.t = VOLTA_COPO; online?.pega('copo', copos.indexOf(c)); estoura(c.x, 0.9, c.z, [0xffb000, 0xfff4d6], 8, 4);
       if (!k.esp && k.copos < ESP_COPOS) {
         k.copos++;
         if (k === jog && k.copos === ESP_COPOS) recado(`${(ESPECIAIS[k.especial] || ESPECIAIS.generico).nome} pronto!`, 1.8);
@@ -1581,10 +1592,7 @@ const ESPECIAIS = {
   leads: {nome: 'Leads frios', dur: 0.6, bom: (k) => !!frenteDe(k, 90),
     ativa: (k) => {
       const alvos = karts.filter((o) => o !== k && !o.terminou && sTot(o) - sTot(k) > 1 && sTot(o) - sTot(k) < 120).sort((a, b) => sTot(a) - sTot(b));
-      [0, -0.4, 0.4].forEach((a, n) => {
-        const l = voa('lead', k, alvos[n] || null), c = Math.cos(a), s = Math.sin(a);
-        [l.vx, l.vz] = [l.vx * c + l.vz * s, l.vz * c - l.vx * s];
-      });
+      [0, -0.4, 0.4].forEach((a, n) => voa('lead', k, alvos[n] || null, a));
     }},
   besouro: {nome: 'Besouro blindado', dur: 3.5, vmax: VMAX * 1.12, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 25) || ameacado(k)},
   estouro: {nome: 'Escapamento estourado', dur: 0.6, bom: (k) => !!atrasDe(k, 12),
@@ -1612,8 +1620,8 @@ const ESPECIAIS = {
     ativa: (k) => {
       for (const o of karts) {
         const d = sTot(o) - sTot(k);
-        if (o === k || d < 0 || d > 22 || !golpe(o, 'derrapa', 0.7, k)) continue;
-        const l = NR[o.idx], s = o.lat >= k.lat ? 1 : -1; o.vel.x += l.x * s * 10; o.vel.z += l.z * s * 10; o.v *= 0.6;
+        if (o === k || d < 0 || d > 22) continue;
+        const l = NR[o.idx], s = o.lat >= k.lat ? 1 : -1; golpe(o, 'derrapa', 0.7, k, [l.x * s * 10, l.z * s * 10, 0.6]);
       }
       const fx = Math.sin(k.ang), fz = Math.cos(k.ang);
       for (let n = 0; n < 40; n++) { const a = (Math.random() - 0.5) * 1.2, c = Math.cos(a), s = Math.sin(a); solta(k.pos.x + fx * 2, 1.2, k.pos.z + fz * 2, n % 2 ? 0xfff06a : 0xffffff, (fx * c + fz * s) * 20, Math.random() * 2, (fz * c - fx * s) * 20, 0.5, 0); }
@@ -1633,7 +1641,8 @@ function cobra(dono, k, n) {
   const q = Math.min(n, k.copos);
   if (!q) return;
   k.copos -= q;
-  dono.copos = Math.min(ESP_COPOS, dono.copos + q);
+  if (online && !online.meu(dono)) online.cobra(dono, k, q);
+  else dono.copos = Math.min(ESP_COPOS, dono.copos + q);
   const tx = `${q} copinho${q > 1 ? 's' : ''}`;
   if (dono === jog) recado(`Cobrou ${tx} de ${k.nome}!`, 1.3); else if (k === jog) recado(`Boleto na cara! Pagou ${tx}`, 1.3);
 }
@@ -1949,7 +1958,7 @@ let modo = 'corrida', copa = null, escPista = 0, iniCorrida = '';
 const PONTOS = [15, 12, 10, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 const progresso = k => k.terminou ? 100 - k.chegada : k.volta + k.idx / N;
 function cruzouLinha(k) {
-  if (estado !== 'corrida') return;
+  if (estado !== 'corrida' && !online) return;
   if (k === jog && k.volta >= 2 && k.volta <= VOLTAS + 1) {
     const tv = tCorrida - tVolta;
     if (!melhorVolta || tv < melhorVolta) melhorVolta = tv;
@@ -1957,12 +1966,14 @@ function cruzouLinha(k) {
     if (k.volta === VOLTAS) avisa('ÚLTIMA VOLTA', 1.6);
   }
   if (k.volta > VOLTAS && !k.terminou) {
-    k.terminou = true; k.chegada = ++chegados; k.tempo = tCorrida;
+    k.terminou = true; k.tempo = tCorrida;
+    if (online) return online.chegou(k);
+    k.chegada = ++chegados;
     if (k === jog) { avisa(`${k.chegada}º!`, 2.5); tFim = 2.6; }
   }
 }
-function largada() {
-  const grade = embaralha(karts.filter((k) => k !== jog)); grade.splice(Math.min(5, grade.length), 0, jog);
+function largada(grade = null) {
+  if (!grade) { grade = embaralha(karts.filter((k) => k !== jog)); grade.splice(Math.min(5, grade.length), 0, jog); }
   grade.forEach((k, i) => {
     const fila = Math.floor(i / 2), col = i % 2;
     const j = N - 10 - fila * 7, l = (col ? -1 : 1) * 3.6;
@@ -2020,10 +2031,10 @@ addEventListener('keydown', (e) => {
   tecla[e.code] = true;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   if (e.code === 'Escape') { if (estado === 'corrida' || estado === 'contagem') pausa(true); else if (estado === 'pausa') pausa(false); }
-  if (e.code === 'Enter') { if (estado === 'menu') abreEscolha(); else if (estado === 'escolha' || estado === 'fimtela') comeca(); }
+  if (e.code === 'Enter') { if (estado === 'menu') abreEscolha(); else if ((estado === 'escolha' || estado === 'fimtela') && !online) comeca(); }
   if (estado === 'escolha' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) escolhe(sel + (e.code === 'ArrowRight' ? 1 : -1));
   if (estado === 'escolha' && (e.code === 'ArrowUp' || e.code === 'ArrowDown')) escolhePista(escPista + (e.code === 'ArrowDown' ? 1 : -1));
-  if (estado === 'corrida' && !e.repeat) {
+  if (estado === 'corrida' && !e.repeat && !online?.pausado) {
     if (['KeyX', 'KeyE', 'ControlLeft', 'ControlRight'].includes(e.code)) usaItem(jog);
     if (e.code === 'KeyC' || e.code === 'KeyQ') usaEspecial(jog);
   }
@@ -2041,6 +2052,7 @@ document.querySelectorAll('#toque button[data-a]').forEach((b) => b.addEventList
 }));
 if (matchMedia('(pointer: coarse)').matches) { document.getElementById('toque').classList.remove('oculto'); document.body.classList.add('toque'); }
 function entrada() {
+  if (online?.pausado) return PARADO;
   const esq = tecla.ArrowLeft || tecla.KeyA || toque.esq, dir = tecla.ArrowRight || tecla.KeyD || toque.dir;
   return {
     acel: !!(tecla.ArrowUp || tecla.KeyW || toque.acel),
@@ -2055,13 +2067,14 @@ const chaveRec = () => CHAVE_REC + '-' + PISTAS[pistaAtual].id;
 const lerRec = () => { try { return parseFloat(localStorage.getItem(chaveRec())) || (PISTAS[pistaAtual].id === 'lupulo' && parseFloat(localStorage.getItem(CHAVE_REC))) || 0; } catch { return 0; } };
 const gravaRec = (t) => { try { localStorage.setItem(chaveRec(), String(t)); } catch {} };
 function mostra(id) {
-  for (const t of ['menu', 'escolha', 'pausa', 'fim']) $(t).classList.toggle('oculto', t !== id);
+  for (const t of ['menu', 'escolha', 'pausa', 'fim', 'sala']) $(t)?.classList.toggle('oculto', t !== id);
   $('toque').style.visibility = id ? 'hidden' : '';
 }
 function avisa(txt, dur) { const a = $('aviso'); a.textContent = txt; a.style.fontSize = txt.length > 4 ? 'clamp(40px,9vw,100px)' : ''; tAviso = dur; }
-function pausa(sim) { estado = sim ? 'pausa' : (tCont > 0 ? 'contagem' : 'corrida'); mostra(sim ? 'pausa' : null); }
+function pausa(sim) { if (online) return online.pausa(sim); estado = sim ? 'pausa' : (tCont > 0 ? 'contagem' : 'corrida'); mostra(sim ? 'pausa' : null); }
 function menuRec() { const r = lerRec(); $('menu-rec').textContent = r ? `Seu recorde no ${PISTAS[pistaAtual].nome}, neste aparelho: ${fmt(r)}` : ''; }
 function telaFim() {
+  if (online) return online.telaFim();
   estado = 'fimtela';
   const ord = ordem();
   $('fim-pos').textContent = `Você chegou em ${jog.chegada}º`;
@@ -2103,7 +2116,7 @@ $('b-continuar').onclick = () => pausa(false);
 $('b-reiniciar').onclick = comeca;
 menuRec();
 function hud() {
-  const corre = estado !== 'menu' && estado !== 'escolha';
+  const corre = estado !== 'menu' && estado !== 'escolha' && estado !== 'sala';
   for (const id of ['hud-volta', 'hud-tempo', 'hud-melhor', 'hud-pos', 'hud-vel', 'hud-turbo', 'hud-item', 'hud-esp', 'hud-msg']) $(id).classList.toggle('oculto', !corre);
   if (!corre) { $('brilho').style.opacity = '0'; return; }
   hudItens(performance.now());
@@ -2225,7 +2238,7 @@ function camera(dt, t) {
     sol.position.set(foco.x + 40, 90, foco.z + 25); sol.target.position.copy(foco);
     return;
   }
-  if (estado === 'menu') {
+  if (estado === 'menu' || estado === 'sala') {
     const a = t * 0.00012;
     cam.position.set(P[0].x + Math.sin(a) * 34, 11, P[0].z + Math.cos(a) * 34);
     cam.lookAt(P[0].x, 2, P[0].z);
@@ -2252,9 +2265,273 @@ function camera(dt, t) {
   cam.fov += (fov - cam.fov) * (1 - Math.exp(-4 * dt)); cam.updateProjectionMatrix();
   sol.position.set(k.pos.x + 40, 90, k.pos.z + 25); sol.target.position.set(k.pos.x, 0, k.pos.z);
 }
+const som = (() => {
+  const CHAVE = 'mytapp-kart-2027-som', VOL = 0.5;
+  let ac = null, comp = null, mestre = null, fx = null, ruido = null, motor = null, vizinho = null, laco = null, ganho = 1, avisou = false;
+  let mudo = (() => { try { return localStorage.getItem(CHAVE) === '0'; } catch { return false; } })();
+  const nt = (m) => 440 * 2 ** ((m - 69) / 12);
+  const ouve = () => !!ac && ac.state === 'running' && !mudo && !document.hidden;
+  const erro = (e) => { if (!avisou) { avisou = true; console.warn('som:', e); } };
+  function cria() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try { ac = new AC(); } catch { ac = null; return; }
+    comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.2;
+    comp.connect(ac.destination);
+    mestre = ac.createGain(); mestre.gain.value = VOL; mestre.connect(comp);
+    fx = ac.createGain(); fx.connect(mestre);
+    ruido = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    const d = ruido.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    motor = voz(1); vizinho = voz(0.55); laco = lacos();
+    if (ac.state === 'suspended') ac.resume().catch(() => {});
+  }
+  function voz(abafa) {
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(), g2 = ac.createGain(), f = ac.createBiquadFilter(),
+      am = ac.createGain(), pulso = ac.createOscillator(), fundo = ac.createGain(), g = ac.createGain();
+    f.type = 'lowpass'; g2.gain.value = 0.5; am.gain.value = 1; g.gain.value = 0;
+    o1.connect(f); o2.connect(g2); g2.connect(f); f.connect(am); am.connect(g); g.connect(mestre);
+    pulso.connect(fundo); fundo.connect(am.gain);
+    for (const o of [o1, o2, pulso]) o.start();
+    const v = {o1, o2, f, g, pulso, fundo, abafa, eletrico: null};
+    tipoVoz(v, false);
+    return v;
+  }
+  function tipoVoz(v, eletrico) {
+    if (v.eletrico === eletrico) return;
+    v.eletrico = eletrico;
+    v.o1.type = eletrico ? 'triangle' : 'sawtooth'; v.o2.type = eletrico ? 'sine' : 'square';
+    v.f.Q.value = eletrico ? 1.5 : 4; v.fundo.gain.value = eletrico ? 0.06 : 0.3;
+  }
+  function ajustaVoz(v, r, abre, vol, doppler = 1) {
+    const t = ac.currentTime, el = v.eletrico, f = (el ? 150 + 560 * r : 62 + 150 * r) * doppler;
+    v.o1.frequency.setTargetAtTime(f, t, 0.05);
+    v.o2.frequency.setTargetAtTime(el ? f * 2.01 : f * 0.502, t, 0.05);
+    v.pulso.frequency.setTargetAtTime(el ? 7 : f * 0.5, t, 0.05);
+    v.f.frequency.setTargetAtTime((el ? 1400 + 1600 * r : 220 + 650 * abre + 900 * r) * v.abafa, t, 0.06);
+    v.g.gain.setTargetAtTime(vol, t, 0.07);
+  }
+  function lacos() {
+    const s = ac.createBufferSource();
+    s.buffer = ruido; s.loop = true;
+    const um = (tipo, freq, q) => {
+      const f = ac.createBiquadFilter(), g = ac.createGain();
+      f.type = tipo; f.frequency.value = freq; f.Q.value = q; g.gain.value = 0;
+      s.connect(f); f.connect(g); g.connect(mestre); return {f, g};
+    };
+    const l = {pneu: um('bandpass', 1700, 1.1), grama: um('lowpass', 380, 0.7), jato: um('highpass', 2600, 0.7)};
+    s.start();
+    return l;
+  }
+  function tom(tipo, f0, f1, dur, vol, t = 0, vib = 0) {
+    const t0 = ac.currentTime + t, o = ac.createOscillator(), g = ac.createGain();
+    o.type = tipo; o.frequency.setValueAtTime(f0, t0);
+    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    if (vib) {
+      const l = ac.createOscillator(), lg = ac.createGain();
+      l.frequency.value = vib; lg.gain.value = f0 * 0.06; l.connect(lg); lg.connect(o.frequency); l.start(t0); l.stop(t0 + dur + 0.05);
+    }
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol * ganho, t0 + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(fx); o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  function sopro(dur, vol, t = 0, tipo = 'bandpass', f0 = 1500, f1 = 0, q = 1, at = 0.012) {
+    const t0 = ac.currentTime + t, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = ruido; f.type = tipo; f.Q.value = q; f.frequency.setValueAtTime(f0, t0);
+    if (f1) f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol * ganho, t0 + Math.min(at, dur / 2)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    s.connect(f); f.connect(g); g.connect(fx); s.start(t0, Math.random() * 0.7); s.stop(t0 + dur + 0.05);
+  }
+  const frase = (notas, tipo = 'triangle', vol = 0.09, baixo = 0) =>
+    notas.forEach(([m, t, d]) => { tom(tipo, nt(m), 0, d, vol, t); if (baixo) tom('triangle', nt(m - 12), 0, d, baixo, t); });
+  const pings = (n, vol, passo, notas = [86, 88, 91, 93, 96, 98]) => { for (let i = 0; i < n; i++) tom('triangle', nt(notas[Math.floor(Math.random() * notas.length)]), 0, 0.12, vol, i * passo); };
+  const pancada = (vol) => { tom('sine', 140, 48, 0.2, vol); sopro(0.13, vol * 0.7, 0, 'lowpass', 900); };
+  const S = {
+    clique: () => tom('triangle', 1250, 0, 0.035, 0.1),
+    passa: () => tom('square', 700, 0, 0.025, 0.035),
+    bip: () => { tom('square', nt(74), 0, 0.16, 0.06); tom('triangle', nt(62), 0, 0.16, 0.1); },
+    ja: () => { tom('square', nt(86), 0, 0.55, 0.06); tom('triangle', nt(81), 0, 0.55, 0.08); tom('triangle', nt(74), 0, 0.55, 0.1); },
+    pausa: () => tom('triangle', 880, 620, 0.14, 0.08),
+    segue: () => tom('triangle', 620, 880, 0.12, 0.08),
+    volta: () => frase([[76, 0, 0.08], [81, 0.09, 0.2]], 'triangle', 0.1),
+    ultima: () => frase([[69, 0, 0.09], [73, 0.1, 0.09], [76, 0.2, 0.09], [81, 0.3, 0.12], [81, 0.48, 0.12], [81, 0.66, 0.3]], 'square', 0.045, 0.07),
+    vitoria: () => frase([[72, 0, 0.11], [76, 0.11, 0.11], [79, 0.22, 0.11], [84, 0.33, 0.28], [83, 0.62, 0.1], [84, 0.72, 0.1], [88, 0.82, 0.7]], 'square', 0.045, 0.08),
+    podio: () => frase([[67, 0, 0.11], [72, 0.11, 0.11], [76, 0.22, 0.11], [79, 0.33, 0.55]], 'square', 0.045, 0.08),
+    chegada: () => frase([[72, 0, 0.13], [74, 0.14, 0.13], [76, 0.28, 0.13], [72, 0.44, 0.45]], 'triangle', 0.09),
+    pulo: () => tom('sine', 260, 150, 0.07, 0.1),
+    faisca: () => tom('triangle', 1400, 2100, 0.07, 0.06),
+    faisca2: () => { tom('triangle', 1800, 2800, 0.09, 0.07); tom('triangle', 2800, 0, 0.06, 0.03, 0.07); },
+    turbo: () => { sopro(0.45, 0.16, 0, 'bandpass', 500, 3000, 0.8); tom('sawtooth', 160, 420, 0.35, 0.04); },
+    batida: () => pancada(0.3),
+    encosta: () => { tom('sine', 180, 80, 0.1, 0.15); sopro(0.07, 0.09, 0, 'lowpass', 1200); },
+    alerta: () => { tom('sine', 1760, 0, 0.06, 0.06); tom('sine', 1760, 0, 0.06, 0.06, 0.1); },
+    caixa: () => { tom('sine', 190, 90, 0.09, 0.2); sopro(0.1, 0.15, 0, 'bandpass', 900, 0, 1.2); tom('triangle', 2637, 0, 0.12, 0.05, 0.03); tom('triangle', 3322, 0, 0.14, 0.04, 0.08); },
+    tique: () => tom('square', 1500, 0, 0.018, 0.022),
+    item: () => { tom('triangle', nt(84), 0, 0.07, 0.09); tom('triangle', nt(91), 0, 0.16, 0.09, 0.07); },
+    copo: (n = 1) => { const f = nt([76, 79, 81, 83, 86, 88][clamp(n, 1, 6) - 1]); tom('triangle', f, 0, 0.1, 0.09); tom('sine', f * 2, 0, 0.06, 0.03); },
+    pronto: () => frase([[79, 0.08, 0.07], [83, 0.15, 0.07], [86, 0.22, 0.07], [91, 0.29, 0.22]], 'triangle', 0.08),
+    cobrou: () => { tom('triangle', 2093, 0, 0.08, 0.07); tom('triangle', 2637, 0, 0.16, 0.07, 0.06); },
+    usa_turbo: () => sopro(0.25, 0.13, 0, 'highpass', 3500),
+    usa_barril: () => { tom('sine', 150, 60, 0.18, 0.24); sopro(0.12, 0.13, 0, 'lowpass', 600); sopro(0.6, 0.05, 0.1, 'lowpass', 250); },
+    usa_espuma: () => { for (let i = 0; i < 7; i++) { const f = 420 + Math.random() * 520; tom('sine', f, f * 1.8, 0.05, 0.06, i * 0.04); } },
+    usa_gelo: () => { sopro(0.35, 0.1, 0, 'bandpass', 3000, 6000, 2); tom('triangle', 2093, 1568, 0.2, 0.06); },
+    usa_escudo: () => { frase([[72, 0, 0.08], [76, 0.04, 0.08], [79, 0.08, 0.08], [84, 0.12, 0.3]], 'triangle', 0.07); tom('sine', 1046, 0, 0.5, 0.035, 0.15, 6); },
+    usa_torneira: () => { sopro(0.9, 0.14, 0, 'lowpass', 500, 2500, 1, 0.2); tom('square', 220, 660, 0.8, 0.025); },
+    roda: () => { pancada(0.22); tom('sine', 720, 180, 0.7, 0.09, 0.03, 11); },
+    congela: () => { sopro(0.25, 0.13, 0, 'highpass', 5000); frase([[96, 0, 0.12], [93, 0.05, 0.12], [89, 0.1, 0.14], [86, 0.16, 0.3]], 'triangle', 0.06); },
+    derrapa: () => { sopro(0.35, 0.12, 0, 'bandpass', 400, 1600, 1.5); tom('sine', 300, 700, 0.12, 0.08); tom('sine', 700, 350, 0.12, 0.06, 0.12); },
+    tonto: () => { tom('sine', 600, 380, 0.9, 0.09, 0, 7); tom('triangle', 900, 600, 0.9, 0.04, 0.05, 5); },
+    glitter: () => { pings(9, 0.05, 0.06); sopro(0.4, 0.05, 0, 'highpass', 6000); },
+    boleto: () => { for (let i = 0; i < 3; i++) sopro(0.05, 0.12, i * 0.06, 'highpass', 3000); tom('square', 660, 0, 0.1, 0.035, 0.2); tom('square', 440, 0, 0.18, 0.035, 0.31); },
+    frio: () => { for (let i = 0; i < 10; i++) tom('triangle', i % 2 ? 1250 : 1000, 0, 0.05, 0.06, i * 0.05); },
+    fumaca: () => { sopro(0.5, 0.1, 0, 'lowpass', 700); tom('sine', 220, 160, 0.12, 0.06, 0.15); },
+    segurou: () => { tom('triangle', 1046, 0, 0.45, 0.1); tom('triangle', 1568, 0, 0.35, 0.07); sopro(0.08, 0.12, 0, 'highpass', 4000); },
+    surto: () => { frase([[60, 0, 0.06], [64, 0.05, 0.06], [67, 0.1, 0.06], [72, 0.15, 0.22]], 'square', 0.045); sopro(0.5, 0.08, 0.05, 'bandpass', 300, 2500, 1); },
+    chope: () => { sopro(1.2, 0.13, 0, 'lowpass', 600, 2200, 1, 0.15); sopro(1, 0.05, 0.1, 'highpass', 4000); },
+    leads: () => { for (let i = 0; i < 3; i++) { sopro(0.25, 0.1, i * 0.08, 'bandpass', 800, 2500, 2); tom('sine', 900, 1300, 0.1, 0.04, i * 0.08); } },
+    estouro: () => { tom('sine', 110, 35, 0.3, 0.3); sopro(0.25, 0.24, 0, 'lowpass', 1800); tom('sine', 95, 40, 0.2, 0.2, 0.13); sopro(0.15, 0.15, 0.13, 'lowpass', 1500); },
+    choque: () => { tom('sawtooth', 1400, 90, 0.25, 0.06); sopro(0.3, 0.1, 0, 'highpass', 3000); tom('square', 60, 0, 0.3, 0.035); },
+    tralha: () => { for (let i = 0; i < 3; i++) { tom('sine', 260 - i * 40, 150 - i * 25, 0.08, 0.15, i * 0.09); sopro(0.06, 0.08, i * 0.09, 'bandpass', 1400); } },
+    papel: () => { for (let i = 0; i < 5; i++) sopro(0.05, 0.1, i * 0.04, 'highpass', 3200); tom('sine', 500, 900, 0.2, 0.04); },
+    encolhe: () => { tom('sine', 900, 200, 0.4, 0.08); tom('triangle', 1800, 400, 0.4, 0.03); },
+    buzina: () => { for (const t of [0, 0.22]) { tom('sawtooth', 392, 0, 0.17, 0.035, t); tom('sawtooth', 494, 0, 0.17, 0.035, t); } },
+    puf: () => { sopro(0.6, 0.12, 0, 'lowpass', 500, 1200, 1, 0.05); sopro(0.4, 0.04, 0.1, 'bandpass', 2000); },
+    orbital: () => { tom('sine', 220, 1760, 0.6, 0.08, 0, 9); tom('triangle', 440, 2600, 0.6, 0.03, 0.1); },
+    brilho: () => { sopro(0.3, 0.08, 0, 'bandpass', 1500, 5000, 1.5); pings(6, 0.045, 0.05); },
+    foguete: () => { sopro(1.2, 0.16, 0, 'lowpass', 150, 1800, 1, 0.1); tom('sawtooth', 55, 110, 1, 0.045); },
+  };
+  const ESP_SOM = {rodada: 'chope', leads: 'leads', estouro: 'estouro', descarga: 'choque', bancos: 'tralha', boletos: 'papel', rack: 'tralha',
+    bolso: 'encolhe', buzina: 'buzina', esporos: 'puf', orbital: 'orbital', parrilla: 'puf', escada: 'tralha', glitter: 'brilho', ignicao: 'foguete'};
+  const ultimo = {}, tocados = {};
+  function toca(nome, g = 1, ...a) {
+    if (!ouve() || !S[nome] || g < 0.02) return;
+    const t = ac.currentTime;
+    if (ultimo[nome] > t - 0.04) return;
+    ultimo[nome] = t; ganho = g; tocados[nome] = (tocados[nome] || 0) + 1;
+    try { S[nome](...a); } catch (e) { erro(e); }
+  }
+  const retrato = (k) => ({k, efeito: k.efeito, roleta: k.roleta > 0, item: k.item, copos: k.copos, esp: k.esp, volta: k.volta,
+    terminou: k.terminou, turbo: k.turbo, escudo: k.escudo, lento: k.lento > 0, drift: k.drift, carga: k.carga, muro: Math.abs(k.lat) > MURO - 1.05, v: k.v});
+  const outros = new Map(), juntos = new Set(), vistos = new Set(), cxAnt = [];
+  let A = null, est0 = '', n0 = 0, sel0 = -1, pista0 = -1, tClique = -1, rol = 0, vAnt = 0, rev = 0, abreS = 0, viz = null, dViz = 0, dop = 1;
+  function eventos(A, B, vale) {
+    const k = B.k;
+    if (vale) {
+      if (B.efeito && B.efeito !== A.efeito) toca(B.efeito);
+      if (A.escudo && !B.escudo) toca('segurou');
+      if (B.lento && !A.lento) toca('fumaca');
+      if (A.roleta && !B.roleta && B.item) toca('item');
+      if (A.item && !B.item && !B.roleta) toca('usa_' + A.item);
+      if (B.copos > A.copos) { toca(B.copos - A.copos > 1 ? 'cobrou' : 'copo', 1, B.copos); if (B.copos >= ESP_COPOS) toca('pronto'); }
+      if (B.esp && B.esp !== A.esp) toca(ESP_SOM[B.esp] || 'surto');
+      if (B.volta > A.volta && B.volta >= 2 && B.volta <= VOLTAS) toca(B.volta === VOLTAS ? 'ultima' : 'volta');
+      if (B.terminou && !A.terminou) {
+        const p = k.chegada || 1 + karts.filter((o) => o !== k && o.terminou).length;
+        toca(p === 1 ? 'vitoria' : p <= 3 ? 'podio' : 'chegada');
+      }
+      if (B.turbo > A.turbo + 0.25) toca('turbo', B.turbo > 1 ? 1 : 0.75);
+      if (B.drift && !A.drift) toca('pulo');
+      if (B.drift && A.drift && A.carga <= 1 && B.carga > 1) toca('faisca');
+      if (B.drift && A.drift && A.carga <= 2.2 && B.carga > 2.2) toca('faisca2');
+      if (B.muro && !A.muro && Math.abs(A.v) > 6) toca('batida', clamp(Math.abs(A.v) / VMAX, 0.35, 1));
+      caixas.forEach((c, n) => { if (c.t > 0 && !(cxAnt[n] > 0) && (c.x - k.pos.x) ** 2 + (c.z - k.pos.z) ** 2 < (R_CAIXA + 1.2) ** 2) toca('caixa'); });
+      for (const o of objs) if (!vistos.has(o.id)) { vistos.add(o.id); if (OBJ[o.tipo]?.mira && o.alvo === k.i) toca('alerta'); }
+      if (vistos.size > 400) { vistos.clear(); for (const o of objs) vistos.add(o.id); }
+    }
+    caixas.forEach((c, n) => { cxAnt[n] = c.t; });
+    for (const o of karts) {
+      if (o === k) continue;
+      const d = Math.hypot(o.pos.x - k.pos.x, o.pos.z - k.pos.z);
+      let m = outros.get(o.i);
+      if (!m) outros.set(o.i, m = {efeito: o.efeito, esp: o.esp});
+      if (vale && o.efeito && o.efeito !== m.efeito && d < 50) toca(o.efeito, 0.6 * (1 - d / 50) ** 1.5);
+      if (vale && o.esp && o.esp !== m.esp && d < 40) toca(ESP_SOM[o.esp] || 'surto', 0.6 * (1 - d / 40) ** 1.5);
+      m.efeito = o.efeito; m.esp = o.esp;
+      const junto = d < 2.4 && !fantasma(o) && !fantasma(k);
+      if (junto && !juntos.has(o.i)) {
+        juntos.add(o.i);
+        const rv = Math.hypot(o.vel.x - k.vel.x, o.vel.z - k.vel.z);
+        if (vale && rv > 4) toca('encosta', clamp(rv / 20, 0.3, 1));
+      } else if (!junto) juntos.delete(o.i);
+    }
+  }
+  const FATOR = {corrida: 1, contagem: 1, fimtela: 0.35, escolha: 0.3};
+  function motores(dt, k) {
+    const t = ac.currentTime, fator = FATOR[estado] || 0, E = ESPECIAIS[k.esp];
+    tipoVoz(motor, !!k.veic?.eletrico);
+    const manual = estado === 'contagem' || (!k.ia && !k.terminou && !(dbg && dbg.auto));
+    const abre = manual ? (entrada().acel ? 1 : 0) : (k.v - vAnt) / Math.max(dt, 1e-3) > 2 ? 1 : 0.3;
+    abreS += (abre - abreS) * (1 - Math.exp(-10 * dt));
+    rev += ((estado === 'contagem' && abre ? 0.65 : 0) - rev) * (1 - Math.exp(-(abre ? 4 : 2.5) * dt));
+    const forte = k.turbo > 0 || k.torneira > 0 || (E?.vmax || 0) > VMAX;
+    const r = (estado === 'contagem' ? rev : Math.min(1.3, Math.abs(k.v) / VMAX)) + (forte ? 0.12 : 0);
+    ajustaVoz(motor, r, abreS, (motor.eletrico ? 0.032 + 0.022 * abreS : 0.05 + 0.035 * abreS) * fator);
+    const corre = estado === 'corrida' ? 1 : 0, vr = Math.min(1, Math.abs(k.v) / VMAX), voa = k.voa || E?.voa;
+    const pneu = voa ? 0 : k.drift ? 0.05 * (0.5 + 0.5 * vr) : k.efeito === 'derrapa' ? 0.04 : 0;
+    const grama = !voa && Math.abs(k.lat) > LARG / 2 + 0.8 && Math.abs(k.v) > 3 ? 0.07 * Math.min(1, Math.abs(k.v) / VGRAMA) : 0;
+    laco.pneu.g.gain.setTargetAtTime(pneu * corre, t, 0.04);
+    laco.pneu.f.frequency.setTargetAtTime(1500 + 500 * vr + (k.carga > 2.2 ? 300 : 0), t, 0.1);
+    laco.grama.g.gain.setTargetAtTime(grama * corre, t, 0.06);
+    laco.jato.g.gain.setTargetAtTime((forte ? 0.028 : 0) * corre, t, 0.08);
+    if (k.roleta > 0 && corre) { rol += dt; if (rol >= 0.085) { rol = 0; toca('tique'); } } else rol = 0.085;
+    let o = null, dm = 30;
+    if (fator) for (const x of karts) { if (x === k) continue; const d = Math.hypot(x.pos.x - k.pos.x, x.pos.z - k.pos.z); if (d < dm) { dm = d; o = x; } }
+    if (o) {
+      const ap = o === viz ? (dm - dViz) / Math.max(dt, 1e-3) : 0;
+      viz = o; dViz = dm; dop += (343 / (343 + clamp(ap, -60, 60)) - dop) * (1 - Math.exp(-6 * dt));
+      tipoVoz(vizinho, !!o.veic?.eletrico);
+      ajustaVoz(vizinho, Math.min(1.3, Math.abs(o.v) / VMAX), 0.5, 0.03 * (1 - dm / 30) ** 2 * fator, dop);
+    } else { viz = null; dop = 1; vizinho.g.gain.setTargetAtTime(0, t, 0.1); }
+    vAnt = k.v;
+  }
+  function quadro(dt) {
+    try {
+      const B = retrato(jog), n = Math.ceil(tCont);
+      if (ac) {
+        if (estado === 'escolha' && est0 === 'escolha' && (sel !== sel0 || escPista !== pista0) && ac.currentTime - tClique > 0.08) toca('passa');
+        if (estado === 'contagem' && n > 0 && (est0 !== 'contagem' || n !== n0)) toca('bip');
+        if (estado === 'corrida' && est0 === 'contagem') toca('ja');
+        if (estado === 'pausa' && est0 !== 'pausa') toca('pausa');
+        if (est0 === 'pausa' && (estado === 'corrida' || estado === 'contagem')) toca('segue');
+        if (estado === 'contagem') vistos.clear();
+        if (A) eventos(A, B, estado === 'corrida' && est0 === 'corrida' && A.k === B.k);
+        if (ouve()) motores(dt, B.k);
+      }
+      A = B; est0 = estado; n0 = n; sel0 = sel; pista0 = escPista;
+    } catch (e) { erro(e); }
+  }
+  function botao() {
+    const b = $('som');
+    if (!b) return;
+    b.textContent = mudo ? '🔇' : '🔊';
+    b.title = mudo ? 'Som desligado (M liga)' : 'Som ligado (M desliga)';
+    b.setAttribute('aria-pressed', String(!mudo));
+  }
+  function alterna() {
+    mudo = !mudo;
+    try { localStorage.setItem(CHAVE, mudo ? '0' : '1'); } catch {}
+    if (mudo) ac?.suspend().catch(() => {});
+    else { if (!ac) cria(); ac?.resume().then(() => toca('clique')).catch(() => {}); }
+    botao();
+  }
+  const acorda = () => { if (mudo || document.hidden) return; if (!ac) cria(); else if (ac.state === 'suspended') ac.resume().catch(() => {}); };
+  for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, acorda, true);
+  document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) ac.suspend().catch(() => {}); else if (!mudo) ac.resume().catch(() => {}); });
+  addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyM' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target;
+    if (el && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable)) return;
+    alterna();
+  });
+  document.addEventListener('click', (e) => { if (e.target.closest?.('.tela button')) { tClique = ac ? ac.currentTime : -1; toca('clique'); } }, true);
+  $('som')?.addEventListener('click', (e) => { e.stopPropagation(); alterna(); e.currentTarget.blur(); });
+  botao();
+  return {quadro, toca, alterna, nomes: () => Object.keys(S), get mudo() { return mudo; }, get ac() { return ac; }, get saida() { return comp; }, tocados: () => ({...tocados}),
+    estado: () => ({criado: !!ac, ac: ac ? ac.state : null, mudo})};
+})();
 const dbg = location.search.includes('debug') ? (window.kartDebug = {auto: false, x: 1, cam: null, olha: null, get karts() { return karts; }, feitos,
   get jog() { return jog; }, get objs() { return objs; }, get caixas() { return caixas; }, get copos() { return copos; }, get modo() { return modo; }, get copa() { return copa; },
-  estado: () => estado, escolhe: (i) => escolhe(i), comeca: () => comeca(), pista: (i) => escolhePista(i), trocaPista, estadoJogo, aplicaEstado,
+  estado: () => estado, escolhe: (i) => escolhe(i), comeca: () => comeca(), pista: (i) => escolhePista(i), trocaPista, estadoJogo, aplicaEstado, som,
   json: () => JSON.stringify(estadoJogo()), usaItem, usaEspecial, golpe, ITENS, ESPECIAIS, PILOTOS, P, T, NR, N,
   daItem: (n, k = jog) => { k.item = n; k.roleta = 0; k.tItem = 0; }, enche: (k = jog) => { k.copos = ESP_COPOS; },
   simula: (seg, para) => { for (let n = Math.round(seg * 30); n > 0; n--) { tSim += 1000 / 30; avanca(1 / 30, tSim); if (para?.()) break; } renderer.render(cena, cam); return estado; }}) : null;
@@ -2267,14 +2544,16 @@ function quadro(t) {
   renderer.render(cena, cam);
 }
 function avanca(dt, t) {
+  online?.tique();
   if (estado === 'contagem') {
     const n = Math.ceil(tCont); tCont -= dt;
     if (Math.ceil(tCont) !== n || !$('aviso').textContent) avisa(tCont > 0 ? String(Math.ceil(tCont)) : 'JÁ!', tCont > 0 ? 1.2 : 0.9);
     if (tCont <= 0) { tCont = 0; estado = 'corrida'; }
   } else if (estado === 'corrida' || estado === 'fimtela') {
     for (let r = 0; r < (dbg ? dbg.x : 1); r++) {
-      if (estado === 'corrida') tCorrida += dt;
+      if (estado === 'corrida' || online) tCorrida += dt;
       for (const k of karts) {
+        if (online && !online.meu(k)) { online.segue(k); continue; }
         const auto = k.ia || k.terminou || !!(dbg && dbg.auto);
         efeitos(k, dt);
         passo(k, ajustaEntrada(k, auto ? pilotoIA(k, dt) : entrada(), !auto), dt);
@@ -2291,7 +2570,8 @@ function avanca(dt, t) {
   particulas(dt);
   camera(dt, t);
   hud();
-  if (estado !== 'menu' && estado !== 'escolha') minimapa(); else mg.clearRect(0, 0, MS, MS);
+  if (estado !== 'menu' && estado !== 'escolha' && estado !== 'sala') minimapa(); else mg.clearRect(0, 0, MS, MS);
+  som.quadro(dt);
 }
 requestAnimationFrame(quadro);
 addEventListener('resize', () => {
