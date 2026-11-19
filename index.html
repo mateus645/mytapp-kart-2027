@@ -1519,7 +1519,7 @@ function passo(k, e, dt) {
   if (k.efeito === 'congela') k.v *= Math.exp(-7 * dt);
   else if (k.efeito === 'roda') k.v *= Math.exp(-1.5 * dt);
   const forte = k.turbo > 0 || k.torneira > 0 || (E?.vmax || 0) > VMAX;
-  if (e.acel) k.v += (forte ? ACEL * 2.2 : ACEL) * dt;
+  if (e.acel) k.v = k.v < vmax ? Math.min(vmax, k.v + (forte ? ACEL * 2.2 : ACEL) * dt) : k.v + ACEL * dt;
   else if (e.freio) k.v -= (k.v > 0 ? FREIO : ACEL * 0.6) * dt;
   else k.v -= Math.sign(k.v) * Math.min(Math.abs(k.v), ATRITO * dt);
   if (k.v > vmax) k.v = Math.max(vmax, k.v - 24 * dt);
