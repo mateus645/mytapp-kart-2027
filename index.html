@@ -170,14 +170,16 @@ const PILOTOS = [
   {"nome":"Menor","especial":"esporos","ok":true,"cor":8361471,"fator":0.93,"veic":{"tipo":"cogumelo","desc":"Cogumelo","cor":3164376,"chama":13037823},"tracos":{"pele":3164376,"cabelo":"gorro","corCabelo":16250351,"camiseta":16250351,"calca":16250351,"tenis":16250351,"bermuda":true}},
   {"nome":"ETejo","especial":"orbital","ok":true,"cor":6747426,"fator":0.94,"veic":{"tipo":"nave","desc":"Nave espacial","cor":14673388,"eletrico":true},"tracos":{"alien":true,"pele":9680258,"corCabelo":6747426,"camiseta":1842721,"calca":2764083,"tenis":3817544}},
   {"nome":"Fábio","especial":"parrilla","ok":true,"cor":6275370,"fator":0.93,"veic":{"tipo":"sidecar","desc":"Versys 1200 preta e verde, sidecar vazio","cor":1513499,"detalhe":6275370,"bandeira":null,"sozinho":"Versys 1200 preta e verde, sidecar vazio","motorista":{"nome":"Fábio","ok":true,"cor":6275370,"tracos":{"cabelo":"curto","corCabelo":9407881,"barba":15658215,"barbona":true,"oculos":1184274,"armacao":"quadrada","pele":14857106,"camiseta":1844019,"calca":2303531}},"vazio":true},"tracos":{"cabelo":"curto","corCabelo":9407881,"barba":15658215,"barbona":true,"oculos":1184274,"armacao":"quadrada","pele":14857106,"camiseta":1844019,"calca":2303531}},
-  {"nome":"Bernardo","especial":"rabada","ok":true,"cor":15921906,"fator":0.94,"veic":{"tipo":"dino","desc":"T-Rex inflável","cor":3982399},"tracos":{"cabelo":"cacheado","corCabelo":4929063,"pele":15319974,"camiseta":1579034}},
+  {"nome":"Bernardo","especial":"mordida","ok":true,"cor":15921906,"fator":0.94,"veic":{"tipo":"dino","desc":"T-Rex inflável","cor":3982399},"tracos":{"cabelo":"cacheado","corCabelo":4929063,"pele":15319974,"camiseta":1579034}},
   {"nome":"Henrique","especial":"empurra","ok":true,"cor":13041408,"fator":0.95,"veic":{"tipo":"carrinho","desc":"Carrinho de supermercado","cor":13225168},"tracos":{"cabelo":"cacheado","corCabelo":8077089,"pele":15582635,"camiseta":2040883}},
   {"nome":"Natália","especial":"glitter","ok":true,"cor":16754904,"fator":0.94,"veic":{"tipo":"march","desc":"Carro rosa","cor":16033481},"tracos":{"cabelo":"longo","corCabelo":3877408,"oculos":4860442,"pele":14462607,"camiseta":1710620}},
-  {"nome":"Alba","especial":"ignicao","ok":true,"cor":9329919,"fator":0.94,"veic":{"tipo":"foguete","desc":"Carro-foguete roxo","cor":6963104},"tracos":{"cabelo":"longo","corCabelo":5124898,"barba":5913896,"cavanhaque":true,"pele":14858134,"camiseta":1447447}},
+  {"nome":"Alba","especial":"onda","ok":true,"cor":9329919,"fator":0.94,"veic":{"tipo":"foguete","desc":"Carro-foguete roxo","cor":6963104},"tracos":{"cabelo":"longo","corCabelo":5124898,"barba":5913896,"cavanhaque":true,"pele":14858134,"camiseta":1447447}},
   {"nome":"Felipe","especial":"peteleco","ok":true,"cor":16727536,"fator":0.94,"veic":{"tipo":"fusca","desc":"Fusca rosa","cor":15895746},"tracos":{"cabelo":"curto","corCabelo":3811872,"barba":4863270,"pele":15251606,"camiseta":1579291}},
   {"nome":"Gabriel","especial":"pedido","ok":true,"cor":14684207,"fator":0.94,"veic":{"tipo":"motoboy","desc":"Motoboy","cor":14163486,"bag":14032678},"tracos":{"cabelo":"curto","corCabelo":1840658,"barba":2300436,"cavanhaque":true,"pele":14197372,"camiseta":3816770}},
   {"nome":"Scharmann","especial":"show","ok":true,"cor":13666876,"fator":0.94,"veic":{"tipo":"som","desc":"Minitrio elétrico com guitarrista","cor":2450390},"tracos":{"cabelo":"longo","corCabelo":7228207,"bone":1579034,"detBone":10125248,"pele":15648168,"camiseta":1843765}},
   {"nome":"Maiara","especial":"bandeja","ok":true,"cor":16752256,"fator":0.94,"veic":{"tipo":"patins","desc":"Patins rosa","cor":16095936,"rodas":3832789,"eletrico":true,"chama":16743104},"tracos":{"cabelo":"longo","cachos":true,"corCabelo":2365716,"oculos":2972328,"pele":12552035,"camiseta":14606046,"calca":1381655,"tenis":16095936}},
+  {"nome":"Antoni","especial":"filamento","ok":true,"cor":16765503,"fator":0.94,"veic":{"tipo":"impressora","desc":"Impressora 3D sobre carretéis","cor":14672613},"tracos":{"cabelo":"curto","corCabelo":2825492,"barba":2760214,"pele":15318943,"camiseta":1975864}},
+  {"nome":"Big Smoke","especial":"jato","ok":true,"cor":2059263,"fator":0.94,"veic":{"tipo":"afericao","desc":"Aferição myTapp","cor":15260870,"chama":3844351},"tracos":{"cabelo":"curto","corCabelo":1511951,"bone":1315862,"abaBone":1015674,"barba":2760730,"oculos":1118481,"armacao":"quadrada","pele":11565660,"camiseta":1447448}},
 ];
 if (location.search.includes('muitos')) for (let n = 0; n < 18; n++) PILOTOS.push({...PILOTOS[1 + n % 11], ok: false});
 let robos = 0;
@@ -733,7 +735,7 @@ function fazPiloto(pai, def, op) {
   } else if (t.bone) {
     const bn = M(t.bone);
     peca(c, touca(R * 1.1, Math.PI * 0.42), bn, 0, 0.05, -0.01);
-    caixa(c, 0.4, 0.03, 0.28, bn, 0, 0.12, R + 0.07, 0.15, 0, 0);
+    caixa(c, 0.4, 0.03, 0.28, t.abaBone ? M(t.abaBone) : bn, 0, 0.12, R + 0.07, 0.15, 0, 0);
     if (t.detBone) caixa(c, 0.13, 0.07, 0.02, M(t.detBone), 0, 0.2, R * 0.92, -0.53, 0, 0);
     if (t.cabelo === 'longo') {
       caixa(c, 0.5, 0.5, 0.12, cab, 0, -0.14, -0.24);
@@ -1430,6 +1432,78 @@ function fazDino(v, def) {
   caixa(v, 0.5, 0.06, 0.03, M(def.cor, 'luz'), 0, 0.9, -0.92);
   return {rodas: [], frente: [], raio: 0.3, chama: [0, 0.9, -1.9], alto: 3.0, escala: 0.82, pernas};
 }
+function carretel(pai, r, larg, x, y, z, cor, solto = true) {
+  const w = new THREE.Group(); w.position.set(x, y, z); w.rotation.order = 'YXZ'; w.userData.solto = solto; pai.add(w);
+  const cil = (rr, l, mat, dx = 0, lados = 16) => { const g = new THREE.CylinderGeometry(rr, rr, l, lados); g.rotateZ(Math.PI / 2); return peca(w, g, mat, dx, 0, 0); };
+  for (const s of [-1, 1]) {
+    cil(r, 0.03, M(0x2b2d31), s * (larg / 2 - 0.015));
+    for (let n = 0; n < 4; n++) { const a = n * Math.PI / 2; caixa(w, 0.012, r * 0.4, r * 0.2, M(0xa3a8ae), s * (larg / 2 + 0.002), Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6, a, 0, 0); }
+  }
+  cil(r * 0.86, larg - 0.06, M(cor));
+  cil(r * 0.3, larg + 0.01, M(0xe8e8e6), 0, 10);
+  cil(r * 0.13, larg + 0.03, M(0x111214), 0, 8);
+  return w;
+}
+function fazImpressora(v, def) {
+  const corpo = M(def.veic.cor), alu = M(0xb9bec4, 'lata'), esc = M(PRETO), mesa = M(0x2e3034), tela = M(0x10141a, 'vidro'), tubo = M(0xf4f4f2), rodas = [], R = 0.42;
+  const cores = [0x9b59ff, 0xffd23f, 0x2b2b2e, 0xe9e9e6];
+  [0.8, -0.82].forEach((z, i) => { for (const s of [1, -1]) rodas.push(carretel(v, R, 0.3, s * 0.66, R, z, cores[i * 2 + (s > 0 ? 0 : 1)])); osso(v, [-0.6, R, z], [0.6, R, z], 0.045, esc); });
+  caixa(v, 0.92, 0.32, 2.1, corpo, 0, 0.46, -0.02);
+  caixa(v, 0.94, 0.05, 2.12, M(0xc4c8cc), 0, 0.31, -0.02);
+  for (const s of [-1, 1]) caixa(v, 0.16, 0.05, 0.03, M(LUZ, 'luz'), s * 0.3, 0.5, 1.035);
+  caixa(v, 0.03, 0.2, 0.32, tela, 0.475, 0.5, 0.62, 0, 0, -0.25);
+  caixa(v, 0.9, 0.035, 1.18, alu, 0, 0.635, -0.16);
+  caixa(v, 1.0, 0.05, 1.26, mesa, 0, 0.675, -0.16);
+  for (const s of [-1, 1]) {
+    caixa(v, 0.1, 1.72, 0.14, alu, s * 0.52, 1.48, 0.2);
+    caixa(v, 0.17, 0.2, 0.24, corpo, s * 0.52, 0.72, 0.2);
+    caixa(v, 0.17, 0.22, 0.22, corpo, s * 0.52, 1.26, 0.2);
+    caixa(v, 0.16, 0.16, 0.2, corpo, s * 0.52, 2.33, 0.2);
+  }
+  caixa(v, 1.0, 0.11, 0.14, alu, 0, 2.34, 0.2);
+  caixa(v, 0.94, 0.1, 0.11, alu, 0, 1.26, 0.2);
+  caixa(v, 0.12, 0.14, 0.16, esc, 0.66, 1.26, 0.2);
+  caixa(v, 0.26, 0.36, 0.2, corpo, 0, 1.14, 0.34);
+  caixa(v, 0.15, 0.12, 0.01, tela, 0, 1.2, 0.445);
+  caixa(v, 0.2, 0.04, 0.012, M(def.cor, 'luz'), 0, 1.03, 0.445);
+  peca(v, new THREE.ConeGeometry(0.035, 0.1, 6), alu, 0, 0.91, 0.34, Math.PI, 0, 0);
+  for (const [x, cor] of [[-0.3, 0x9b59ff], [0.3, 0xffd23f]]) {
+    carretel(v, 0.24, 0.16, x, 2.62, 0.2, cor, false);
+    caixa(v, 0.05, 0.2, 0.05, alu, x, 2.45, 0.2);
+    osso(v, [x * 0.8, 2.55, 0.32], [x * 0.55, 1.95, 0.42], 0.018, tubo); osso(v, [x * 0.55, 1.95, 0.42], [x * 0.1, 1.33, 0.36], 0.018, tubo);
+  }
+  osso(v, [0.13, 1.2, 0.3], [0.6, 1.55, 0.26], 0.03, esc); osso(v, [0.6, 1.55, 0.26], [0.62, 0.7, -0.2], 0.03, esc);
+  caixa(v, 0.3, 0.1, 0.02, M(def.cor, 'luz'), 0, 0.42, -1.075);
+  fazPiloto(v, def, {quadril: [0, 0.76, -0.34], mao: [0.15, 1.12, 0.24], joelho: [0.21, 0.94, 0.04], pe: [0.23, 0.74, 0.4], inc: 0.12});
+  return {rodas, frente: rodas.slice(0, 2), raio: R, chama: [0, 0.46, -1.35], alto: 2.86, escala: 0.86};
+}
+function fazAfericao(v, def) {
+  const bege = M(def.veic.cor), esc = M(PRETO), inox = M(0xd7dbe0, 'lata'), engate = M(0xf1f0ea), mang = M(0xdfeaf0, 'vidro'), branco = M(0xf7f7f5), rodas = [];
+  for (const [z, r] of [[0.86, 0.3], [-0.78, 0.34]]) { for (const s of [1, -1]) rodas.push(pneu(v, r, 0.24, s * 0.64, r, z, 0x8a8f96, 12)); osso(v, [-0.6, r, z], [0.6, r, z], 0.05, esc); }
+  peca(v, new THREE.CylinderGeometry(0.19, 0.19, 1.4, 12), mang, 0, 0.55, 0.02, Math.PI / 2, 0, 0);
+  peca(v, new THREE.CylinderGeometry(0.08, 0.08, 1.38, 8), M(0x6fc3ff, 'luz'), 0, 0.55, 0.02, Math.PI / 2, 0, 0);
+  peca(v, new THREE.CylinderGeometry(0.3, 0.3, 0.76, 12), bege, 0, 0.58, 0.86, Math.PI / 2, 0, 0);
+  caixa(v, 0.62, 0.36, 0.56, bege, 0, 0.78, 0.86);
+  caixa(v, 0.46, 0.16, 0.42, esc, 0, 1.04, 0.86);
+  for (const x of [-0.24, 0.24]) for (const z of [0.64, 1.08]) peca(v, new THREE.CylinderGeometry(0.035, 0.035, 0.03, 6), inox, x, 0.97, z);
+  caixa(v, 0.01, 0.16, 0.3, branco, 0.315, 0.72, 0.86);
+  for (const z of [1.3, 0.42]) peca(v, new THREE.CylinderGeometry(0.22, 0.22, 0.18, 12), engate, 0, 0.58, z, Math.PI / 2, 0, 0);
+  peca(v, new THREE.CylinderGeometry(0.12, 0.12, 0.04, 10), esc, 0, 0.58, 1.4, Math.PI / 2, 0, 0);
+  osso(v, [-0.12, 1.1, 0.8], [-0.3, 1.36, 0.56], 0.035, branco); osso(v, [-0.3, 1.36, 0.56], [0.3, 1.36, 0.56], 0.035, branco); osso(v, [0.3, 1.36, 0.56], [0.12, 1.1, 0.8], 0.035, branco);
+  peca(v, new THREE.CylinderGeometry(0.07, 0.07, 0.24, 10), M(0x1e5bd8), 0.36, 1.0, 0.66);
+  peca(v, new THREE.CylinderGeometry(0.05, 0.05, 0.1, 8), esc, 0.36, 1.16, 0.66);
+  for (const [dx, cor] of [[0.2, 0xd8262b], [0.26, 0x1d1f23]]) { const m = M(cor); osso(v, [dx, 0.98, 0.62], [dx + 0.08, 1.02, -0.05], 0.022, m); osso(v, [dx + 0.08, 1.02, -0.05], [dx - 0.02, 1.12, -0.5], 0.022, m); }
+  caixa(v, 0.42, 0.4, 0.5, inox, 0, 0.58, -0.76);
+  peca(v, new THREE.CylinderGeometry(0.2, 0.2, 0.3, 12), inox, 0, 0.84, -0.76);
+  for (const z of [-0.44, -1.08]) peca(v, new THREE.CylinderGeometry(0.21, 0.21, 0.18, 12), engate, 0, 0.58, z, Math.PI / 2, 0, 0);
+  caixa(v, 0.62, 0.42, 0.56, esc, 0, 1.13, -0.76);
+  for (const s of [-1, 1]) caixa(v, 0.01, 0.22, 0.34, branco, s * 0.315, 1.13, -0.76);
+  peca(v, new THREE.CylinderGeometry(0.1, 0.1, 0.13, 6), inox, 0, 1.4, -0.76);
+  peca(v, new THREE.SphereGeometry(0.09, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), inox, 0, 1.46, -0.76);
+  caixa(v, 0.3, 0.1, 0.02, M(def.cor, 'luz'), 0, 1.0, -1.045);
+  fazPiloto(v, def, {quadril: [0, 0.8, -0.26], mao: [0.27, 1.34, 0.55], joelho: [0.24, 0.98, 0.22], pe: [0.27, 0.66, 0.5], inc: 0.1, escala: 1.1});
+  return {rodas, frente: rodas.slice(0, 2), raio: 0.34, chama: [0, 0.58, -1.45], alto: 2.25, escala: 0.9};
+}
 function funde(v) {
   v.updateMatrixWorld(true);
   const inv = v.matrixWorld.clone().invert(), grupos = new Map(), velhas = [];
@@ -1451,7 +1525,7 @@ function funde(v) {
   for (const [mat, geos] of grupos) { const m = new THREE.Mesh(mergeGeometries(geos), mat); m.castShadow = !mat.transparent; v.add(m); }
 }
 const FAZ = {moto: fazMoto, cogumelo: fazCogumelo, patinete: fazPatinete, nave: fazNave, duo: fazDuo, sidecar: fazSidecar, carrinho: fazCarrinho,
-  foguete: fazFoguete, motoboy: fazMotoboy, patins: fazPatins, som: fazSom, dino: fazDino};
+  foguete: fazFoguete, motoboy: fazMotoboy, patins: fazPatins, som: fazSom, dino: fazDino, impressora: fazImpressora, afericao: fazAfericao};
 function fazKart(def) {
   const g = new THREE.Group(), corpo = new THREE.Group(), v = new THREE.Group();
   g.add(corpo); corpo.add(v);
@@ -1632,6 +1706,12 @@ function naMiraFrente(k, max, larg) {
   return null;
 }
 const pertoDe = (k, r) => karts.filter((o) => o !== k && (o.pos.x - k.pos.x) ** 2 + (o.pos.z - k.pos.z) ** 2 < r * r);
+const ondaPega = (k) => pertoDe(k, 14).filter((o) => !o.terminou && sTot(o) - sTot(k) < 3);
+function mordivel(k) {
+  let m = null, md = 8;
+  for (const o of karts) { if (o === k || o.terminou) continue; const d = sTot(o) - sTot(k); if (d > 0 && d < md && Math.abs(o.lat - k.lat) < 3.2) { md = d; m = o; } }
+  return m;
+}
 const fantasma = (k) => k.esp === 'bolso' || !!ESPECIAIS[k.esp]?.voa;
 const costura = (k) => !!ESPECIAIS[k.esp]?.costura;
 const ariete = (k) => k.torneira > 0 || !!ESPECIAIS[k.esp]?.ram;
@@ -1658,7 +1738,7 @@ function golpe(k, tipo, dur, de = null, emp = null) {
   if (tipo === 'roda') k.v *= 0.4; else if (tipo === 'congela') k.v *= 0.25;
   if ((tipo === 'roda' || tipo === 'congela') && k.copos > 0 && !k.esp) k.copos--;
   if (emp) { k.vel.x += emp[0]; k.vel.z += emp[1]; if (emp[2]) k.v *= emp[2]; }
-  if (k === jog) recado({roda: 'Rodou!', congela: 'Congelado!', derrapa: 'Escorregou!', tonto: 'Tonto!', glitter: 'Glitter na cara!', boleto: 'Boleto na cara!', frio: 'Atendendo lead frio!'}[tipo] || '', 1.3);
+  if (k === jog) recado({roda: 'Rodou!', congela: 'Congelado!', derrapa: 'Escorregou!', tonto: 'Tonto!', glitter: 'Glitter na cara!', boleto: 'Boleto na cara!', frio: 'Atendendo lead frio!', laco: 'Laçado!'}[tipo] || '', 1.3);
   else if (de === jog) recado(`Acertou ${k.nome}!`, 1.2);
   online?.acertou(k, de);
   return true;
@@ -1676,8 +1756,10 @@ const OBJ = {
   bandeja: {r: 1.4, vida: 4.5, mira: 58, golpe: ['roda', 1.0], volta: 1.4, cores: [0xd8dce2, 0xffb000, 0xfff4d6]},
   esporos: {r: 5, vida: 6, nuvem: true, golpe: ['tonto', 2.2]},
   fumaca: {r: 5.5, vida: 6, nuvem: true},
+  agua: {r: 1.6, vida: 6, chao: true, golpe: ['derrapa', 0.8], some: true, cores: [0x3aa8ff, 0xbfe6ff, 0xffffff]},
+  laco: {r: 1.5, vida: 4.5, mira: 56, golpe: ['laco', 1.8], some: true, cores: [0xffd23f, 0x9b59ff, 0xffffff]},
 };
-const LERDO = {glitter: 0.6, boleto: 0.6, frio: 0.5};
+const LERDO = {glitter: 0.6, boleto: 0.6, frio: 0.5, laco: 0.55};
 function novoObj(tipo, k, o = {}) {
   const ob = {id: online ? online.idObj() : proxId++, tipo, s: DIST[k.idx], lat: k.lat, x: k.pos.x, z: k.pos.z, vx: 0, vz: 0, v: 0, t: 0, dono: k.i, alvo: -1, ...o};
   if (!OBJ[tipo].mira) Object.assign(ob, noTrilho(idxDe(ob.s), ob.lat));
@@ -1815,7 +1897,8 @@ const ESPECIAIS = {
   empurra: {nome: 'Carrinho desgovernado', dur: 3.5, vmax: VTURBO * 1.08, mira: true, ram: true, blinda: true, bom: (k) => !!frenteDe(k, 50),
     ativa: (k) => { k.espAlvo = frenteDe(k, 80)?.i ?? -1; }},
   glitter: {nome: 'Bomba de glitter', dur: 0.6, bom: (k) => !!frenteDe(k, 90), ativa: (k) => voa('glitter', k, frenteDe(k, 150))},
-  ignicao: {nome: 'Ignição do foguete', dur: 3, vmax: VTURBO * 1.3, ram: true, bom: () => true},
+  onda: {nome: 'Onda da ignição', dur: 1.5, vmax: VTURBO, bom: (k) => ondaPega(k).length > 0 || ameacado(k),
+    ativa: (k) => { for (const o of ondaPega(k)) { const dx = o.pos.x - k.pos.x, dz = o.pos.z - k.pos.z, d = Math.hypot(dx, dz) || 1; golpe(o, 'derrapa', 1.0, k, [dx / d * 9, dz / d * 9, 0.7]); } }},
   peteleco: {nome: 'Peteleco na tampinha', dur: 1.8, vmax: VTURBO, voa: true, alto: 4.5, blinda: true, bom: (k) => !!frenteDe(k, 30) || ameacado(k),
     fim: (k) => {
       for (const o of pertoDe(k, 8)) golpe(o, 'roda', 1.0, k);
@@ -1826,10 +1909,16 @@ const ESPECIAIS = {
   show: {nome: 'Show ao vivo', dur: 1.5, bom: (k) => pertoDe(k, 14).length > 0,
     tique: (k) => { const r = 4 + 14 * (1 - k.tEsp / 1.5); for (const o of pertoDe(k, r)) golpe(o, 'tonto', 1.5, k); }},
   bandeja: {nome: 'Bandeja voadora', dur: 0.6, bom: (k) => !!frenteDe(k, 80), ativa: (k) => voa('bandeja', k, frenteDe(k, 120))},
-  rabada: {nome: 'Rabada', dur: 0.8, bom: (k) => pertoDe(k, 6).length > 0,
+  mordida: {nome: 'Mordida', dur: 0.6, bom: (k) => !!mordivel(k),
     ativa: (k) => {
-      for (const o of pertoDe(k, 6.5)) { const dx = o.pos.x - k.pos.x, dz = o.pos.z - k.pos.z, d = Math.hypot(dx, dz) || 1; golpe(o, 'roda', 1.0, k, [dx / d * 12, dz / d * 12, 0]); }
+      const o = mordivel(k); if (!o) return;
+      const l = NR[o.idx], s = o.lat >= k.lat ? 1 : -1;
+      if (golpe(o, 'roda', 1.1, k, [l.x * s * 6, l.z * s * 6, 0])) estoura(o.pos.x, 1.2, o.pos.z, [0xf7f5ef, 0x3cc43f, 0xd0505a], 30, 7);
     }},
+  jato: {nome: "Jato d'água", dur: 2, vmax: VTURBO, bom: (k) => !!atrasDe(k, 30) || !!frenteDe(k, 35),
+    ativa: (k) => { k.tJato = 0; },
+    tique: (k, dt) => { if ((k.tJato = (k.tJato || 0) - dt) <= 0) { k.tJato = 0.3; novoObj('agua', k, {s: atras(k, 4)}); } }},
+  filamento: {nome: 'Laço de filamento', dur: 0.6, bom: (k) => !!frenteDe(k, 90), ativa: (k) => voa('laco', k, frenteDe(k, 140))},
   generico: {nome: 'Turbo de robô', dur: 3, vmax: VTURBO, bom: () => true},
 };
 function cobra(dono, k, n) {
@@ -2043,6 +2132,15 @@ const MODELO = {};
   });
   MODELO.esporos = novo((g) => { for (let n = 0; n < 7; n++) { const a = n * 0.9; peca(g, new THREE.IcosahedronGeometry(1.6 + (n % 3) * 0.5, 1), vidro(n % 2 ? 0x9cff6a : 0x5fd8a0, 0.28), Math.cos(a) * 2.6, 0.4 + (n % 3) * 0.7, Math.sin(a) * 2.6).castShadow = false; } });
   MODELO.fumaca = novo((g) => { for (let n = 0; n < 7; n++) { const a = n * 0.9; peca(g, new THREE.IcosahedronGeometry(1.8 + (n % 3) * 0.6, 1), vidro(n % 2 ? 0x9a9a9a : 0x6e6e6e, 0.36), Math.cos(a) * 2.8, 0.6 + (n % 3) * 0.8, Math.sin(a) * 2.8).castShadow = false; } });
+  MODELO.agua = novo((g) => {
+    peca(g, new THREE.CylinderGeometry(1.6, 1.6, 0.03, 16), vidro(0x3aa8ff, 0.7)).castShadow = false;
+    for (let n = 0; n < 5; n++) { const a = n * 1.256, r = 0.5 + (n % 2) * 0.6, b = peca(g, new THREE.SphereGeometry(0.3, 7, 5), vidro(0xbfe6ff, 0.85), Math.cos(a) * r, 0.04, Math.sin(a) * r); b.scale.set(1, 0.25, 1); b.castShadow = false; }
+  });
+  MODELO.laco = novo((g) => {
+    peca(g, new THREE.TorusGeometry(0.75, 0.05, 5, 20), M(0xffd23f, 'luz'));
+    peca(g, new THREE.TorusGeometry(0.6, 0.035, 4, 18), M(0x9b59ff, 'luz'), 0, 0, 0.06);
+    osso(g, [0.75, 0, 0], [1.3, 0.25, -0.5], 0.04, M(0xffd23f, 'luz'));
+  });
   MODELO.torneira = novo((g) => {
     const inox = M(0xd8dce2, 'lata');
     peca(g, new THREE.CylinderGeometry(0.35, 0.42, 0.12, 12), inox, 0, 0.06, 0);
@@ -2054,7 +2152,7 @@ const MODELO = {};
     peca(g, new THREE.CylinderGeometry(0.07, 0.07, 0.7, 6), M(0xffb000, 'luz'), 0, 0.37, 0.62);
   });
 }
-const OBJ_Y = {barril: 0.55, carga: 0.5, boleto: 1.3, gelo: 1.3, lead: 1.3, glitter: 1.3, bandeja: 1.3, espuma: 0.03, banqueta: 0, escada: 0, esporos: 0.6, fumaca: 0.8};
+const OBJ_Y = {barril: 0.55, carga: 0.5, boleto: 1.3, gelo: 1.3, lead: 1.3, glitter: 1.3, bandeja: 1.3, espuma: 0.03, banqueta: 0, escada: 0, esporos: 0.6, fumaca: 0.8, agua: 0.03, laco: 1.3};
 const malhaObj = new Map();
 function mostraObjs(dt, t) {
   for (const o of objs) {
@@ -2075,6 +2173,7 @@ function mostraObjs(dt, t) {
     if (o.tipo === 'fumaca' && Math.random() < 0.9) solta(o.x + R() * 9, 0.4 + Math.random() * 2, o.z + R() * 9, Math.random() < 0.5 ? 0xa0a0a0 : 0x6a6a6a, R() * 0.6, 1.2, R() * 0.6, 1.2, -0.4);
     if (o.tipo === 'glitter') solta(o.x, 1.3, o.z, Math.random() < 0.5 ? 0xff5fc8 : 0xffffff, R() * 2, R() * 2, R() * 2, 0.5, 0);
     if (o.tipo === 'gelo' || o.tipo === 'lead') solta(o.x, 1.3, o.z, 0xe8fbff, R() * 2, R() * 2, R() * 2, 0.4, 0);
+    if (o.tipo === 'laco') solta(o.x, 1.3, o.z, Math.random() < 0.5 ? 0xffd23f : 0x9b59ff, R() * 2, R() * 2, R() * 2, 0.35, 0);
   }
   if (malhaObj.size > objs.length || objs.some((o) => !malhaObj.has(o.id))) {
     const vivos = new Set(objs.map((o) => o.id));
@@ -2104,7 +2203,7 @@ function efeitosVisuais(k, dt, t) {
   let y = 0;
   if (E?.voa) y = Math.sin(Math.PI * clamp(1 - k.tEsp / E.dur, 0, 1)) * (E.alto || 6);
   if (k.esp === 'peteleco') { const p = clamp(1 - k.tEsp / E.dur, 0, 1); k.corpo.rotation.y += p * p * (3 - 2 * p) * Math.PI * 2; k.corpo.rotation.z += Math.sin(p * Math.PI) * 0.35; }
-  if (k.esp === 'rabada') k.corpo.rotation.y += clamp(1 - k.tEsp / E.dur, 0, 1) * Math.PI * 2;
+  k.corpo.rotation.x = k.esp === 'mordida' ? Math.sin(Math.PI * clamp(1 - k.tEsp / E.dur, 0, 1)) * 0.4 : 0;
   if (k.esp === 'pedido') k.corpo.rotation.z += Math.sin(t * 0.014) * 0.3;
   k.g.position.y = y;
   const esc = k.esp === 'bolso' ? 0.45 : 1;
@@ -2116,11 +2215,12 @@ function efeitosVisuais(k, dt, t) {
   }
   const forte = k.turbo > 0 || k.torneira > 0 || (E?.vmax || 0) > VMAX;
   k.chama.visible = forte;
-  if (forte) k.chama.scale.setScalar((k.esp === 'ignicao' ? 2.4 : 1) * (0.8 + Math.random() * 0.6));
+  if (forte) k.chama.scale.setScalar((k.esp === 'onda' ? 1.8 : k.esp === 'jato' ? 1.5 : 1) * (0.8 + Math.random() * 0.6));
   if (k.efeito === 'roda' && Math.random() < 0.6) solta(x, alto + 0.9, z, 0xffe14a, R() * 4, 1.5, R() * 4, 0.45, 3);
   if (k.efeito === 'tonto') for (let n = 0; n < 2; n++) { const a = t * 0.009 + n * Math.PI; solta(x + Math.cos(a) * 1.1, alto + 1.1, z + Math.sin(a) * 1.1, 0xb6ff6a, 0, 0.2, 0, 0.25, 0); }
   if (k.efeito === 'glitter') for (let n = 0; n < 3; n++) solta(x + R() * 3, 0.3 + Math.random() * alto, z + R() * 3, [0xff5fc8, 0xffffff, 0xffe14a][n], R(), 0.8, R(), 0.6, 0.5);
   if (k.efeito === 'boleto') for (let n = 0; n < 2; n++) solta(x + R() * 2.6, alto * 0.6 + Math.random() * 1.4, z + R() * 2.6, n ? 0xfff1b8 : 0xffffff, R() * 3, 1.2, R() * 3, 0.5, 2);
+  if (k.efeito === 'laco') for (let n = 0; n < 2; n++) { const a = t * 0.012 + n * Math.PI; solta(x + Math.cos(a) * 1.4, 0.6 + n * 0.5, z + Math.sin(a) * 1.4, n ? 0xffd23f : 0x9b59ff, 0, 0.1, 0, 0.3, 0); }
   if (k.efeito === 'frio' && Math.random() < 0.7) solta(x + R() * 2.6, alto + 1.4, z + R() * 2.6, 0xd8f6ff, R(), -1, R(), 0.8, 0.5);
   if (k.efeito === 'derrapa') solta(x + R() * 2, 0.2, z + R() * 2, 0xfffaf0, R() * 3, 1.5, R() * 3, 0.4);
   if (k.efeito === 'congela' && Math.random() < 0.5) solta(x + R() * 2.6, alto + 0.8, z + R() * 3, 0xe8fbff, R(), 0.4, R(), 0.7, 1);
@@ -2128,7 +2228,12 @@ function efeitosVisuais(k, dt, t) {
   if (!E) return;
   if (k.esp === 'rodada') for (let n = 0; n < 5; n++) solta(x + s * 1.4, alto * 0.75, z + c * 1.4, n % 2 ? 0xffb000 : 0xfff4d6, s * 24 + R() * 4, 1 + Math.random() * 2.5, c * 24 + R() * 4, 0.6, 6);
   if (k.esp === 'orbital') solta(x + R() * 0.6, y + 0.2, z + R() * 0.6, Math.random() < 0.5 ? 0x6fd8ff : 0xffffff, R() * 2, -7, R() * 2, 0.35, 0);
-  if (k.esp === 'ignicao') for (let n = 0; n < 3; n++) solta(x - s * 2.2, 0.7, z - c * 2.2, n % 2 ? 0xff7a00 : 0xffd24a, -s * 10 + R() * 4, Math.random() * 3, -c * 10 + R() * 4, 0.4, -2);
+  if (k.esp === 'onda') {
+    const p = 1 - k.tEsp / E.dur;
+    if (p < 0.35) { const r = 2 + 12 * p / 0.35; for (let n = 0; n < 16; n++) { const a = Math.random() * 6.283; solta(x + Math.cos(a) * r, 0.5 + Math.random(), z + Math.sin(a) * r, Math.random() < 0.5 ? 0xff7a00 : 0xffd24a, Math.cos(a) * 10, 1, Math.sin(a) * 10, 0.3, -1); } }
+    for (let n = 0; n < 2; n++) solta(x - s * 2.2, 0.7, z - c * 2.2, n % 2 ? 0xff7a00 : 0xffd24a, -s * 10 + R() * 4, Math.random() * 3, -c * 10 + R() * 4, 0.4, -2);
+  }
+  if (k.esp === 'jato') for (let n = 0; n < 3; n++) solta(x - s * 1.7, 0.6, z - c * 1.7, n % 2 ? 0x3aa8ff : 0xdff4ff, -s * 12 + R() * 3, 1 + Math.random() * 2, -c * 12 + R() * 3, 0.45, 6);
   if (k.esp === 'empurra' || k.esp === 'besouro') if (Math.random() < 0.4) solta(x + s * 1.6, 0.4, z + c * 1.6, 0xfff2b0, R() * 5, 2, R() * 5, 0.3, 6);
   if (k.esp === 'peteleco') solta(x + R(), y + 0.6, z + R(), Math.random() < 0.5 ? 0xf28cc2 : 0xffffff, R() * 3, -2, R() * 3, 0.4, 0);
   if (k.esp === 'pedido') solta(x - s * 1.2, 0.7, z - c * 1.2, Math.random() < 0.5 ? 0xe0102f : 0xffffff, -s * 6 + R() * 2, 0.5, -c * 6 + R() * 2, 0.3, 0);
@@ -2136,7 +2241,7 @@ function efeitosVisuais(k, dt, t) {
     const r = 4 + 14 * (1 - k.tEsp / E.dur);
     for (let n = 0; n < 14; n++) { const a = Math.random() * 6.283; solta(x + Math.cos(a) * r, 1 + Math.random() * 1.5, z + Math.sin(a) * r, Math.random() < 0.5 ? 0xd08a3c : 0x9a7fc0, Math.cos(a) * 9, 0.5, Math.sin(a) * 9, 0.25, 0); }
   }
-  if (k.esp === 'rabada' && Math.random() < 0.7) solta(x + R() * 6, 0.4, z + R() * 6, 0x3cc43f, R() * 4, 2, R() * 4, 0.4, 6);
+  if (k.esp === 'mordida' && Math.random() < 0.6) solta(x + s * 2.4 + R(), 2.2, z + c * 2.4 + R(), Math.random() < 0.5 ? 0xf7f5ef : 0x3cc43f, R() * 3, 1, R() * 3, 0.3, 4);
 }
 const CAMPOS = ['i', 'ang', 'v', 'idx', 'lat', 'volta', 'metade', 'drift', 'carga', 'turbo', 'pulo', 'terminou', 'chegada', 'tempo', 'fator',
   'faixa', 'faixaAlvo', 'faixaT', 'efeito', 'tEfeito', 'tImune', 'escudo', 'torneira', 'lento', 'esp', 'tEsp', 'espAlvo', 'copos', 'tCheio',
@@ -2625,10 +2730,13 @@ const som = (() => {
     riff: () => [[52, 0, 0.1], [52, 0.12, 0.1], [59, 0.24, 0.18], [57, 0.45, 0.1], [55, 0.57, 0.1], [57, 0.69, 0.4]].forEach(([m, t, d]) => { tom('sawtooth', nt(m), 0, d, 0.035, t); tom('sawtooth', nt(m + 7), 0, d, 0.025, t); }),
     bandeja: () => { tom('triangle', 1320, 0, 0.35, 0.07); tom('sine', 2640, 0, 0.25, 0.035); sopro(0.4, 0.06, 0.05, 'bandpass', 1200, 2600, 2); },
     rugido: () => { sopro(0.7, 0.14, 0, 'lowpass', 250, 900, 1, 0.08); tom('sawtooth', 95, 55, 0.7, 0.06, 0, 7); },
+    mordida: () => { sopro(0.45, 0.12, 0, 'lowpass', 250, 900, 1, 0.06); tom('sawtooth', 95, 60, 0.4, 0.05, 0, 7); for (const t of [0.3, 0.42]) { tom('square', 200, 60, 0.07, 0.07, t); sopro(0.06, 0.1, t, 'lowpass', 1100); } },
+    jato: () => { sopro(1.6, 0.14, 0, 'highpass', 1400, 3200, 1, 0.05); sopro(1.4, 0.07, 0.05, 'bandpass', 500, 1400, 1); },
+    laco: () => { tom('square', 1760, 0, 0.05, 0.03); tom('square', 2093, 0, 0.05, 0.03, 0.07); sopro(0.45, 0.08, 0.12, 'bandpass', 400, 2400, 3); tom('triangle', 300, 1200, 0.35, 0.04, 0.12); },
   };
   const ESP_SOM = {rodada: 'chope', leads: 'leads', estouro: 'estouro', descarga: 'choque', bancos: 'tralha', boletos: 'papel', rack: 'tralha',
-    bolso: 'encolhe', buzina: 'buzina', esporos: 'puf', orbital: 'orbital', parrilla: 'puf', escada: 'tralha', glitter: 'brilho', ignicao: 'foguete',
-    peteleco: 'peteleco', pedido: 'moto', show: 'riff', bandeja: 'bandeja', rabada: 'rugido'};
+    bolso: 'encolhe', buzina: 'buzina', esporos: 'puf', orbital: 'orbital', parrilla: 'puf', escada: 'tralha', glitter: 'brilho', onda: 'foguete',
+    peteleco: 'peteleco', pedido: 'moto', show: 'riff', bandeja: 'bandeja', mordida: 'mordida', jato: 'jato', filamento: 'laco'};
   const ultimo = {}, tocados = {};
   function toca(nome, g = 1, ...a) {
     if (!ouve() || !S[nome] || g < 0.02) return;
